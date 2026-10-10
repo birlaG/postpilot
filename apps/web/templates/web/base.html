@@ -1,0 +1,85 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f4c55">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="apple-touch-icon" href="{% static 'web/icons/apple-touch-icon.png' %}">
+  <link rel="icon" href="{% static 'web/icons/icon-192.png' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="PostPilot">
+  <title>{% block title %}PostPilot{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap">
+  <link rel="stylesheet" href="{% static 'web/app.css' %}">
+</head>
+<body>
+{% include 'web/_icons.html' %}
+{% if request.workspace %}
+<div class="shell">
+  <aside class="side">
+    <div class="brand-mark">Post<span>Pilot</span></div>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}on{% endif %}"><svg><use href="#i-home"/></svg>Today</a>
+      <a href="{% url 'queue' %}" class="{% if request.resolver_match.url_name == 'queue' %}on{% endif %}"><svg><use href="#i-check"/></svg>Approval queue</a>
+      <a href="{% url 'calendar' %}" class="{% if request.resolver_match.url_name == 'calendar' %}on{% endif %}"><svg><use href="#i-calendar"/></svg>Calendar</a>
+      <a href="{% url 'posts' %}" class="{% if request.resolver_match.url_name in 'posts post_detail' %}on{% endif %}"><svg><use href="#i-list"/></svg>All posts</a>
+      <div class="group">Set up</div>
+      <a href="{% url 'accounts' %}" class="{% if request.resolver_match.url_name in 'accounts account_detail connect subscription_edit' %}on{% endif %}"><svg><use href="#i-link"/></svg>Accounts</a>
+      <a href="{% url 'sources' %}" class="{% if request.resolver_match.url_name == 'sources' %}on{% endif %}"><svg><use href="#i-feed"/></svg>Followed sources</a>
+      <a href="{% url 'brand' %}" class="{% if request.resolver_match.url_name == 'brand' %}on{% endif %}"><svg><use href="#i-palette"/></svg>Brand kit</a>
+      <div class="group">Grow</div>
+      <a href="{% url 'analytics' %}" class="{% if request.resolver_match.url_name == 'analytics' %}on{% endif %}"><svg><use href="#i-chart"/></svg>Analytics</a>
+      <a href="{% url 'invite' %}" class="{% if request.resolver_match.url_name == 'invite' %}on{% endif %}"><svg><use href="#i-gift"/></svg>Invite and earn</a>
+      <a href="{% url 'billing' %}" class="{% if request.resolver_match.url_name == 'billing' %}on{% endif %}"><svg><use href="#i-card"/></svg>Plan and billing</a>
+    </nav>
+    <div class="foot">
+      <b>{{ request.workspace.name }}</b>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn small" type="submit">Log out</button></form>
+    </div>
+  </aside>
+  <nav class="tabbar" aria-label="Quick navigation">
+    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}on{% endif %}"><svg><use href="#i-home"/></svg>Today</a>
+    <a href="{% url 'queue' %}" class="{% if request.resolver_match.url_name == 'queue' %}on{% endif %}"><svg><use href="#i-check"/></svg>Queue</a>
+    <a href="{% url 'calendar' %}" class="{% if request.resolver_match.url_name == 'calendar' %}on{% endif %}"><svg><use href="#i-calendar"/></svg>Calendar</a>
+    <a href="{% url 'accounts' %}" class="{% if request.resolver_match.url_name in 'accounts account_detail connect subscription_edit' %}on{% endif %}"><svg><use href="#i-link"/></svg>Accounts</a>
+    <details class="more"><summary><svg><use href="#i-list"/></svg>More</summary>
+      <div class="sheet">
+        <a href="{% url 'posts' %}">All posts</a><a href="{% url 'sources' %}">Followed sources</a><a href="{% url 'brand' %}">Brand kit</a>
+        <a href="{% url 'analytics' %}">Analytics</a><a href="{% url 'invite' %}">Invite and earn</a><a href="{% url 'billing' %}">Plan and billing</a>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+      </div></details>
+  </nav>
+  <main class="main">
+    <header class="workspace-bar">
+      <div class="workspace-context"><span class="workspace-kicker">WORKSPACE</span><strong>{{ request.workspace.name }}</strong></div>
+      <span class="workspace-timezone">{{ request.workspace.timezone }}</span>
+    </header>
+    {% if messages %}<ul class="msgs">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+<div class="split">
+  <aside class="brandside">
+    <div class="brand-mark">Post<span>Pilot</span></div>
+    <div>
+      <h2>Posts that write and send themselves.</h2>
+      <p>Pick your topics once. Claude writes, designs and publishes every day, or waits for your approval.</p>
+      <ul class="tl" style="margin-top:28px;max-width:360px">
+        <li><span class="time">09:00</span><span class="dot published"></span><div><div class="what">Daily motivation</div><div class="where">Instagram</div></div></li>
+        <li><span class="time">12:30</span><span class="dot"></span><div><div class="what">Trending news</div><div class="where">LinkedIn, waiting for you</div></div></li>
+        <li><span class="time">18:00</span><span class="dot"></span><div><div class="what">Tech explained</div><div class="where">YouTube Short</div></div></li>
+      </ul>
+    </div>
+    <span class="help" style="color:rgba(255,255,255,.7)">YouTube, Instagram, Facebook, X, LinkedIn and Telegram</span>
+  </aside>
+  <main class="formside"><div class="formbox">
+    {% if messages %}<ul class="msgs">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% block auth %}{% endblock %}
+  </div></main>
+</div>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,70 @@
+name: postpilot
+
+x-app: &app
+  build: .
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    db: { condition: service_healthy }
+    redis: { condition: service_started }
+  volumes:
+    - media:/app/media
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+
+  web:
+    <<: *app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py seed_plans && python manage.py seed_categories &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+    expose: ["8000"]
+
+  # Separate queues so a slow platform never blocks generation (PRD section 12)
+  worker-generate:
+    <<: *app
+    command: celery -A config worker -Q generate,ingest -c 2 -n generate@%h --loglevel=INFO
+
+  worker-publish:
+    <<: *app
+    command: celery -A config worker -Q publish -c 2 -n publish@%h --loglevel=INFO
+
+  beat:
+    <<: *app
+    command: celery -A config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on: [web]
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - media:/srv/media:ro
+      - certs:/etc/letsencrypt
+      - acme:/var/www/certbot
+
+volumes:
+  pgdata:
+  redisdata:
+  media:
+  certs:
+  acme:

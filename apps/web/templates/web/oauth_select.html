@@ -1,0 +1,17 @@
+{% extends "web/base.html" %}
+{% block title %}Choose accounts · PostPilot{% endblock %}
+{% block content %}
+<h1>Choose what to connect</h1>
+<p class="sub">These Pages and Instagram accounts are available from your sign-in. Your plan limits how many you can connect.</p>
+<div class="card" style="max-width:620px">
+  <form method="post">{% csrf_token %}
+    {% for c in candidates %}
+    <label style="display:flex;gap:10px;align-items:center;font-weight:500;margin:10px 0">
+      <input type="checkbox" name="key" value="{{ c.key }}">
+      <span><b>{{ c.display_name }}</b> <span class="badge">{{ c.platform|title }}</span></span>
+    </label>
+    {% endfor %}
+    <p><button class="btn primary" type="submit">Connect selected</button> <a class="btn" href="{% url 'accounts' %}">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

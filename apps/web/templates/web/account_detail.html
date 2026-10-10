@@ -1,0 +1,62 @@
+{% extends "web/base.html" %}
+{% block title %}{{ account.display_name }} · PostPilot{% endblock %}
+{% block content %}
+<h1>{{ account.display_name }} <span class="badge {{ account.status }}">{{ account.get_status_display }}</span></h1>
+<p class="sub">{{ account.get_platform_display }} {{ account.handle }}
+  {% if account.last_error %}&middot; <span style="color:var(--bad)">{{ account.last_error }}</span>{% endif %}</p>
+
+<div class="card">
+  <h2 style="margin-top:0">Content categories</h2>
+  {% for s in subs %}
+  <div class="cat">
+    <div><div class="t">{{ s.category.icon }} {{ s.label }} {% if not s.enabled %}<span class="badge">Paused</span>{% endif %}</div>
+      <div class="help">{{ s.post_times|join:", " }} &middot; {% if not s.followed_source_id %}{{ s.get_region_display }} &middot; {% endif %}{{ s.get_content_format_display }} &middot; {{ s.get_post_style_display }} &middot; {{ s.get_publish_mode_display }}{% if s.effective_mode != s.publish_mode %} (forced to approval: high risk){% endif %}
+        {% if s.custom_topic %}&middot; focus: {{ s.custom_topic }}{% endif %}</div></div>
+    <div class="row">
+      <form class="inline" method="post" action="{% url 'subscription_generate' s.pk %}">{% csrf_token %}<button class="btn small" type="submit">Generate now</button></form>
+      {% if not s.followed_source_id %}<details style="display:inline-block"><summary class="btn small" style="list-style:none;cursor:pointer">Write about my idea</summary>
+        <form method="post" action="{% url 'subscription_generate' s.pk %}" style="position:absolute;z-index:5;margin-top:6px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;padding:12px;width:min(340px,86vw)">{% csrf_token %}
+          <input type="text" name="idea" maxlength="300" required minlength="5" placeholder="e.g. 3 tips for first-time home buyers" aria-label="Your topic">
+          <div class="help">Claude writes a general, evergreen post on your topic. Check the facts before approving.</div>
+          <button class="btn small primary" type="submit" style="margin-top:8px">Write it</button></form></details>{% endif %}
+      <a class="btn small" href="{% url 'subscription_edit' s.pk %}">Edit</a>
+      <form class="inline" method="post" action="{% url 'subscription_delete' s.pk %}" onsubmit="return confirm('Remove this category?')">{% csrf_token %}<button class="btn small danger" type="submit">Remove</button></form>
+    </div>
+  </div>
+  {% empty %}<div class="empty">No categories yet. Add one below.</div>{% endfor %}
+</div>
+
+{% if available %}
+<h2>Add a category</h2>
+<div class="grid g3">
+  {% for c in available %}
+  <div class="card">
+    <b>{{ c.icon }} {{ c.name }}</b> {% if c.risk_level == 'high' %}<span class="badge needs_review">Approval required</span>{% endif %}
+    <p class="help">{{ c.description }}</p>
+    <form method="post" action="{% url 'subscription_add' account.pk %}">{% csrf_token %}<input type="hidden" name="category" value="{{ c.pk }}"><button class="btn small primary" type="submit">Add</button></form>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if follow_category %}
+<h2>Follow a podcast, channel or site</h2>
+<div class="card">
+  <p class="help">{{ follow_category.description }}.</p>
+  {% if follow_choices %}
+  <form method="post" action="{% url 'subscription_add' account.pk %}" class="row">{% csrf_token %}
+    <input type="hidden" name="category" value="{{ follow_category.pk }}">
+    <select name="source">{% for f in follow_choices %}<option value="{{ f.pk }}">{{ f.name }} ({{ f.get_kind_display }})</option>{% endfor %}</select>
+    <button class="btn small primary" type="submit">Add</button>
+  </form>
+  {% else %}<p class="help">Nothing to add yet. <a href="{% url 'sources' %}">Follow a source</a> first.</p>{% endif %}
+</div>
+{% endif %}
+
+<h2>Connection</h2>
+{% if account.status == 'broken' or account.status == 'expiring' %}<div class="notice">This account needs attention. Reconnect it from the <a href="{% url 'accounts' %}">Accounts page</a> if it uses sign-in, or disconnect it before adding a replacement.</div>{% endif %}
+<div class="row">
+  <form class="inline" method="post" action="{% url 'account_action' account.pk 'check' %}">{% csrf_token %}<button class="btn" type="submit">Check connection</button></form>
+  <form class="inline" method="post" action="{% url 'account_action' account.pk 'delete' %}" onsubmit="return confirm('Disconnect and delete the stored token?')">{% csrf_token %}<button class="btn danger" type="submit">Disconnect</button></form>
+</div>
+{% endblock %}

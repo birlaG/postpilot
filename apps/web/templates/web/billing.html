@@ -1,0 +1,38 @@
+{% extends "web/base.html" %}
+{% block title %}Plan and billing · PostPilot{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="page-eyebrow">WORKSPACE SUBSCRIPTION</span><h1>Plan and billing</h1></div>
+  {% if sub.status == 'active' %}<span class="billing-state"><span class="badge active">Subscription active</span></span>{% endif %}
+</div>
+{% if sub.status == 'active' or sub.status == 'past_due' %}
+<p class="sub">You are on <b>{{ sub.plan.name }}</b> ({{ sub.get_status_display }}){% if sub.renews_at %}, renews {{ sub.renews_at|date:"j M Y" }}{% endif %}.
+  Used {{ used }} of {{ limit }} posts this month.</p>
+{% else %}
+<p class="sub">Choose a plan to start posting. Every plan is paid, billed monthly, and you can cancel any time.</p>
+{% endif %}
+{% if paid_now and sub.status != 'active' %}<div class="notice">Payment received. Your plan activates as soon as the payment provider confirms it, usually within a minute. Refresh this page.</div>{% endif %}
+{% if sub.status == 'past_due' %}<div class="notice" style="background:var(--bad-soft);color:var(--bad)">Your last payment failed. Posting continues until {{ sub.grace_until|date:"j M" }}. Update your payment method to avoid a pause.</div>{% endif %}
+{% if not can_pay %}<div class="notice">No payment provider is configured on this server (set STRIPE_SECRET_KEY and/or RAZORPAY keys).{% if debug %} Development buttons below activate a plan without payment.{% endif %}</div>{% endif %}
+
+{% if currencies|length > 1 %}
+<p class="row">Pay in:
+  {% for c in currencies %}<a class="btn small {% if c == currency %}primary{% endif %}" href="?currency={{ c }}">{% if c == 'USD' %}US dollars{% else %}Indian rupees{% endif %}</a>{% endfor %}
+</p>
+{% endif %}
+
+<div class="section-heading pricing-heading"><div><span class="page-eyebrow">SIMPLE MONTHLY PRICING</span><h2>Choose the plan that fits</h2><p class="help">All plans include the core publishing workflow. Upgrade as your channels grow.</p></div></div>
+<div class="grid g3 plan-grid">
+  {% for p in plans %}
+  <div class="card plan {% if p.pk == sub.plan_id and sub.status == 'active' %}current{% endif %}">
+    <div class="plan-topline"><b>{{ p.name }}</b>{% if p.pk == sub.plan_id and sub.status == 'active' %}<span class="plan-current">Current</span>{% endif %}</div>
+    <div class="price">{% if currency == 'INR' %}&#8377;{{ p.price_inr }}{% else %}${{ p.price_usd }}{% endif %}<small> / month</small></div>
+    <p class="help">{{ p.max_accounts }} connected accounts &middot; {{ p.posts_per_month }} posts / month<br>{% if p.allow_video %}Includes YouTube Shorts{% else %}No YouTube Shorts{% endif %}</p>
+    {% if p.pk != sub.plan_id or sub.status != 'active' %}
+      {% if can_pay %}<form method="post" action="{% url 'billing_subscribe' p.code %}">{% csrf_token %}<input type="hidden" name="currency" value="{{ currency }}"><button class="btn primary" type="submit">Choose {{ p.name }}</button></form>{% endif %}
+      {% if debug %}<form method="post" action="{% url 'billing_dev_activate' p.code %}" style="margin-top:6px">{% csrf_token %}<button class="btn small" type="submit">[dev] activate without payment</button></form>{% endif %}
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

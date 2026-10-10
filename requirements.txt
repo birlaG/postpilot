@@ -1,0 +1,13 @@
+Django>=5.1,<6.2
+celery>=5.4
+redis>=5.0
+anthropic>=0.40
+requests>=2.32
+razorpay>=1.4
+cryptography>=43
+Pillow>=10.3
+gunicorn>=22
+whitenoise>=6.7
+psycopg[binary]>=3.2
+stripe>=11
+defusedxml>=0.7

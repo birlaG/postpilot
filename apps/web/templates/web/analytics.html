@@ -1,0 +1,39 @@
+{% extends "web/base.html" %}
+{% block title %}Analytics · PostPilot{% endblock %}
+{% block content %}
+<h1>Analytics</h1>
+<p class="sub">How your posts did in the last 30 days. Numbers refresh every few hours.</p>
+
+{% if not totals.tracked %}
+<div class="card empty"><b style="color:var(--ink);font:650 18px var(--font-head)">No results yet</b><br> Numbers appear a few hours after your first post is published.
+  {% if no_metrics %}<br><span class="help">Not available for: {{ no_metrics|join:", " }}.</span>{% endif %}</div>
+{% else %}
+<div class="grid g4">
+  <div class="card stat"><div class="n">{{ totals.tracked }}</div><div class="l">Posts with results (of {{ totals.posts }} published)</div></div>
+  <div class="card stat"><div class="n">{{ totals.reach }}</div><div class="l">Views and reach</div></div>
+  <div class="card stat"><div class="n">{{ totals.engagement }}</div><div class="l">Likes, comments, shares</div></div>
+  <div class="card stat"><div class="n">{% widthratio totals.engagement totals.tracked 1 %}</div><div class="l">Engagement per post</div></div>
+</div>
+
+{% if best_hours %}
+<div class="card" style="margin-top:16px;border-left:4px solid var(--sun)"><b>Your best posting times</b>
+  <p class="help">Based on how posts did by the hour they went out (your timezone). Try these in your category schedule.</p>
+  <div class="row">{% for h in best_hours %}<span class="badge published">{{ h.hour }} &middot; {{ h.avg }} per post ({{ h.posts }} post{{ h.posts|pluralize }})</span>{% endfor %}</div></div>
+{% endif %}
+
+<div class="grid g2" style="margin-top:16px;align-items:start">
+  <div class="card"><b>By topic</b>
+    {% for r in by_category %}<div style="margin:10px 0"><div class="row" style="justify-content:space-between"><span>{{ r.name }}</span><span class="mono">{{ r.engagement }} &middot; {{ r.posts }} post{{ r.posts|pluralize }}</span></div>
+      <div class="bar"><i style="width:{{ r.pct }}%"></i></div></div>{% endfor %}</div>
+  <div class="card"><b>By platform</b>
+    {% for r in by_platform %}<div style="margin:10px 0"><div class="row" style="justify-content:space-between"><span>{{ r.name }}</span><span class="mono">{{ r.engagement }} &middot; {{ r.posts }} post{{ r.posts|pluralize }}</span></div>
+      <div class="bar"><i style="width:{{ r.pct }}%"></i></div></div>{% endfor %}
+    {% if no_metrics %}<p class="help">No results available for: {{ no_metrics|join:", " }}.</p>{% endif %}</div>
+</div>
+
+<div class="card" style="margin-top:16px"><b>Top posts</b>
+  <table><tr><th>Post</th><th>Where</th><th>Views</th><th>Engagement</th></tr>
+  {% for t in top_posts %}<tr><td><a href="{% url 'post_detail' t.post.pk %}">{{ t.post.caption|truncatechars:70 }}</a></td>
+    <td>{{ t.post.account.get_platform_display }}</td><td>{{ t.m.reach }}</td><td>{{ t.eng }}</td></tr>{% endfor %}</table></div>
+{% endif %}
+{% endblock %}

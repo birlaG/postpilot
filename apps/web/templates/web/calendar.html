@@ -1,0 +1,23 @@
+{% extends "web/base.html" %}
+{% block title %}Calendar · PostPilot{% endblock %}
+{% block content %}
+<h1>Content calendar</h1>
+<p class="sub">Everything scheduled and published over two weeks, in your timezone ({{ tz }}).</p>
+<div class="row" style="margin-bottom:14px">
+  <a class="btn small" href="?start={{ prev|date:'Y-m-d' }}">&larr; Earlier</a>
+  <a class="btn small" href="{% url 'calendar' %}">Today</a>
+  <a class="btn small" href="?start={{ next|date:'Y-m-d' }}">Later &rarr;</a>
+</div>
+<div class="grid g4" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+  {% for d in days %}
+  <div class="card" {% if d.is_today %}style="outline:2px solid var(--accent)"{% endif %}>
+    <b>{{ d.date|date:"D j M" }}</b>{% if d.is_today %} <span class="badge">Today</span>{% endif %}
+    {% for it in d.items %}
+    <div class="cat" style="padding:8px 0"><div>
+      <div class="t" style="font-size:14px"><a href="{% url 'post_detail' it.post.pk %}">{{ it.local|date:"H:i" }} {{ it.post.category.name }}</a></div>
+      <div class="help">{{ it.post.account.get_platform_display }}</div></div><span class="badge {{ it.post.status }}">{{ it.post.get_status_display }}</span></div>
+    {% empty %}<div class="help" style="padding:8px 0">Nothing planned</div>{% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

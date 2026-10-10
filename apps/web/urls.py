@@ -1,0 +1,39 @@
+from django.contrib.auth import views as auth_views
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("manifest.webmanifest", views.manifest, name="manifest"),
+    path("health/", views.health, name="health"),
+    path("signup/", views.signup, name="signup"),
+    path("login/", auth_views.LoginView.as_view(template_name="web/login.html"), name="login"),
+    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("", views.home, name="dashboard"),
+    path("card-preview/", views.card_preview, name="card_preview"),
+    path("analytics/", views.analytics, name="analytics"),
+    path("invite/", views.invite, name="invite"),
+    path("calendar/", views.calendar, name="calendar"),
+    path("accounts/", views.accounts, name="accounts"),
+    path("accounts/connect/<str:platform>/", views.connect, name="connect"),
+    path("accounts/<int:pk>/", views.account_detail, name="account_detail"),
+    path("accounts/<int:pk>/<str:action>/", views.account_action, name="account_action"),
+    path("accounts/<int:account_pk>/categories/add/", views.subscription_add, name="subscription_add"),
+    path("oauth/select/", views.oauth_select, name="oauth_select"),
+    path("oauth/<str:provider>/start/", views.oauth_start, name="oauth_start"),
+    path("oauth/<str:provider>/callback/", views.oauth_callback, name="oauth_callback"),
+    path("subscriptions/<int:pk>/", views.subscription_edit, name="subscription_edit"),
+    path("subscriptions/<int:pk>/delete/", views.subscription_delete, name="subscription_delete"),
+    path("subscriptions/<int:pk>/generate/", views.subscription_generate, name="subscription_generate"),
+    path("sources/", views.sources_page, name="sources"),
+    path("sources/<int:pk>/<str:action>/", views.source_action, name="source_action"),
+    path("queue/", views.queue, name="queue"),
+    path("posts/", views.posts, name="posts"),
+    path("posts/<int:pk>/", views.post_detail, name="post_detail"),
+    path("brand/", views.brand, name="brand"),
+    path("billing/", views.billing_page, name="billing"),
+    path("billing/subscribe/<slug:code>/", views.billing_subscribe, name="billing_subscribe"),
+    path("billing/dev-activate/<slug:code>/", views.billing_dev_activate, name="billing_dev_activate"),
+    path("billing/webhook/razorpay/", views.razorpay_webhook, name="razorpay_webhook"),
+    path("billing/webhook/stripe/", views.stripe_webhook, name="stripe_webhook"),
+]

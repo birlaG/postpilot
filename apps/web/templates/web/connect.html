@@ -1,0 +1,16 @@
+{% extends "web/base.html" %}
+{% block title %}Connect {{ label }} · PostPilot{% endblock %}
+{% block content %}
+<h1>Connect {{ label }}</h1>
+<p class="sub">We check the credentials before saving. They are encrypted at rest and you can delete them any time.</p>
+<div class="card" style="max-width:560px">
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for f in form %}
+      <label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+      {% if f.help_text %}<div class="help">{{ f.help_text }}</div>{% endif %}{{ f.errors }}
+    {% endfor %}
+    <p><button class="btn primary" type="submit">Verify and connect</button> <a class="btn" href="{% url 'accounts' %}">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "web/base.html" %}
+{% block title %}Post {{ post.pk }} · PostPilot{% endblock %}
+{% block content %}
+<h1>{{ post.category.name }} <span class="badge {{ post.status }}">{{ post.get_status_display }}</span></h1>
+<p class="sub">{{ post.account.display_name }} &middot; {{ post.scheduled_at|date:"D j M Y, H:i" }} {{ request.workspace.timezone }}
+  {% if post.published_at %}&middot; published {{ post.published_at|date:"j M H:i" }} {{ request.workspace.timezone }}{% endif %}</p>
+
+{% if post.dry_run %}<div class="notice">Dry run: this text was not written by Claude and cannot be approved. Set ANTHROPIC_API_KEY to generate real posts.</div>{% endif %}
+{% if post.error %}<div class="notice" style="background:var(--bad-soft);color:var(--bad)">{{ post.error }}</div>{% endif %}
+
+<div class="grid g2" style="grid-template-columns: 1.4fr 1fr">
+  <div class="card">
+    {% if editable %}
+    <form method="post">{% csrf_token %}
+      <label for="{{ form.caption.id_for_label }}" style="margin-top:0">Caption</label>{{ form.caption }}{{ form.caption.errors }}
+      <label for="{{ form.hashtags.id_for_label }}">Hashtags</label>{{ form.hashtags }}
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" name="action" value="approve" type="submit" {% if not post.can_approve and post.status != 'queued' %}disabled{% endif %}>{% if post.status == 'queued' %}Save changes{% else %}Approve{% endif %}</button>
+        <button class="btn" name="action" value="save" type="submit">Save draft</button>
+        {% if post.subscription %}<button class="btn" name="action" value="regenerate" type="submit">Regenerate</button>{% endif %}
+        <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
+      </div>
+    </form>
+    {% if post.status != 'queued' and post.caption %}
+    <form method="post" class="row" style="margin-top:14px;align-items:flex-end">{% csrf_token %}
+      <div style="flex:1;min-width:220px"><label for="instruction" style="margin:0 0 4px">Ask Claude to rewrite it</label>
+        <input type="text" id="instruction" name="instruction" maxlength="300" placeholder="e.g. make it shorter, funnier, or more formal"></div>
+      <button class="btn" name="action" value="revise" type="submit">Rewrite</button>
+    </form>
+        {% endif %}
+    {% else %}
+      <div class="post-text">{{ post.full_text }}</div>
+    {% endif %}
+    {% if post.source_url %}<p class="help">Source: <a href="{{ post.source_url }}" target="_blank" rel="noopener">{{ post.source_title }}</a></p>{% endif %}
+  </div>
+  <div>
+    {% if post.video_path %}<video class="preview" src="{{ post.video_url }}" controls muted playsinline></video>
+    {% elif post.media_path %}<img class="preview" src="{{ post.media_url }}" alt="{{ post.alt_text }}">{% endif %}
+    <div class="card" style="margin-top:14px">
+      <b>Review</b>
+      <p class="help">{{ post.review_notes|default:"No notes." }}</p>
+      {% if post.risk_flags %}<p>{% for f in post.risk_flags %}<span class="badge needs_review">{{ f }}</span> {% endfor %}</p>{% endif %}
+      {% if runs %}<table>{% for r in runs %}<tr><td>{{ r.stage }}</td><td class="mono">{{ r.model }}</td><td class="mono">${{ r.cost_usd|floatformat:4 }}</td></tr>{% endfor %}</table>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

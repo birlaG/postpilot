@@ -1,0 +1,33 @@
+{% extends "web/base.html" %}
+{% block title %}{{ sub.category.name }} schedule · PostPilot{% endblock %}
+{% block content %}
+<h1>{{ sub.category.icon }} {{ sub.category.name }}</h1>
+<p class="sub">for {{ sub.account.display_name }} &middot; {{ sub.label }}</p>
+<div class="card" style="max-width:560px">
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <label for="{{ form.post_times_text.id_for_label }}">{{ form.post_times_text.label }}</label>{{ form.post_times_text }}
+    <div class="help">{{ form.post_times_text.help_text }} Timezone: {{ sub.account.workspace.timezone }}</div>{{ form.post_times_text.errors }}
+    <label for="{{ form.content_format.id_for_label }}">Content type</label>{{ form.content_format }}
+    <div class="help">What each post contains. Instagram needs an image and YouTube needs a video, so those are fixed. Videos need the Pro plan.</div>
+    <label for="{{ form.language.id_for_label }}">Language</label>{{ form.language }}
+    <div class="help">Posts for this category are written in this language. Leave it on the brand kit language to use one language everywhere.</div>
+    <label for="{{ form.post_style.id_for_label }}">Writing style</label>{{ form.post_style }}
+    <div class="help">How Claude writes it: simple explainer, numbered list, mini story, quiz or a punchy one-liner.</div>
+    <label><input type="checkbox" name="auto_times" {% if form.auto_times.value %}checked{% endif %}> Learn my best posting times</label>
+    <div class="help">Once at least 10 of this account's posts have results, PostPilot moves posts to the hours that get the most engagement. One slot a day stays on your times so it keeps testing new hours. {% if best_hours %}Best hours so far: <b>{{ best_hours|join:", " }}</b>.{% else %}Not enough results yet.{% endif %}</div>
+    <label for="{{ form.publish_mode.id_for_label }}">Publish mode</label>{{ form.publish_mode }}
+    <div class="help"><b>Auto-publish</b>: Claude writes, an independent AI review checks it, and it posts on schedule with no action from you. <b>Approve first</b>: each post waits in your queue. <b>Draft only</b>: nothing is posted. A post that fails the review or the safety checks is never auto-published; it waits for you.</div>
+    {% if sub.category.forces_approval %}
+    <label><input type="checkbox" name="auto_ack" {% if form.auto_ack.value %}checked{% endif %}> I accept the risk of auto-publishing this high risk category</label>
+    <div class="help">{{ sub.category.name }} can contain sensitive claims. Auto-publish only if you accept responsibility for what is posted. Leave unticked and the category stays on approval even if you pick Auto-publish.</div>{{ form.auto_ack.errors }}
+    {% else %}<div style="display:none">{{ form.auto_ack }}</div>{% endif %}
+    {% if not sub.followed_source_id %}<label for="{{ form.region.id_for_label }}">Region</label>{{ form.region }}
+    <div class="help">Whose news and podcast charts to use. Evergreen categories ignore it.</div>{% else %}<div style="display:none">{{ form.region }}</div>{% endif %}
+    <label for="{{ form.custom_topic.id_for_label }}">Focus (optional)</label>{{ form.custom_topic }}
+    <div class="help">e.g. "AI tools for students". Keeps posts inside this angle.</div>
+    <label><input type="checkbox" name="enabled" {% if form.enabled.value %}checked{% endif %}> Enabled</label>
+    <p><button class="btn primary" type="submit">Save</button> <a class="btn" href="{% url 'account_detail' sub.account_id %}">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

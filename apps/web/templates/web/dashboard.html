@@ -1,0 +1,67 @@
+{% extends "web/base.html" %}
+{% block title %}Today · PostPilot{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="page-eyebrow">YOUR PUBLISHING OVERVIEW</span><h1>Today</h1>
+    <p class="sub">{{ today_label|date:"l j F" }}. What is waiting for you, what is going out, and what went out.</p></div>
+  <a class="btn primary" href="{% url 'accounts' %}">Manage accounts <span aria-hidden="true">&rarr;</span></a>
+</div>
+
+{% if not is_live %}<div class="notice"><b>No active plan.</b> Posting is paused until you choose a plan. <a href="{% url 'billing' %}">Choose a plan</a></div>{% endif %}
+{% if ai_dry_run %}<div class="notice"><b>Dry-run mode.</b> No ANTHROPIC_API_KEY is set, so posts are placeholders and cannot be published. Add the key to your .env to generate real posts.</div>{% endif %}
+{% if not accounts %}<div class="notice">No accounts connected yet. <a href="{% url 'accounts' %}">Connect your first account</a> to start.</div>{% endif %}
+
+{% if checklist.done < checklist.total %}
+<div class="card setup-card" style="margin-bottom:20px">
+  <div class="row" style="justify-content:space-between"><div><span class="page-eyebrow">GETTING STARTED</span><b class="setup-title">Finish setting up</b></div>
+    <span class="setup-progress">{{ checklist.done }} / {{ checklist.total }}</span>
+    {% if checklist.next %}<a class="btn small primary" href="{% url checklist.next.url %}">{{ checklist.next.label }}</a>{% endif %}</div>
+  <div class="bar" style="margin:10px 0 12px"><i style="width:{% widthratio checklist.done checklist.total 100 %}%"></i></div>
+  <div class="checklist">{% for i in checklist.items %}<div class="help" style="margin:4px 0">{% if i.done %}<span style="color:var(--good)">&#10003;</span> <s>{{ i.label }}</s>{% else %}&#9675; <a href="{% url i.url %}">{{ i.label }}</a>{% endif %}</div>{% endfor %}</div>
+</div>
+{% endif %}
+
+<div class="grid g4 statrow" style="margin-bottom:20px">
+  <a class="card stat stat-review" href="{% url 'queue' %}" style="color:inherit;text-decoration:none"><div class="n">{{ waiting }}</div><div class="l">Waiting for your approval</div></a>
+  <div class="card stat stat-queued"><div class="n">{{ queued }}</div><div class="l">Queued to publish</div></div>
+  <div class="card stat stat-published"><div class="n">{{ published_30 }}</div><div class="l">Published in 30 days</div></div>
+  <div class="card stat stat-failed"><div class="n">{{ failed }}</div><div class="l">Failed in 7 days</div></div>
+</div>
+
+<div class="grid g2" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start">
+  <div class="card today">
+    <h2>Schedule</h2>
+    {% for g in timeline %}
+      <div class="tl-day {% if g.label == 'Today' %}now{% endif %}">{{ g.label }}, {{ g.date|date:"j M" }}</div>
+      <ul class="tl">
+      {% for it in g.items %}
+        <li><span class="time">{{ it.local|date:"H:i" }}</span><span class="dot {{ it.post.status }}"></span>
+          <div><div class="what"><a href="{% url 'post_detail' it.post.pk %}">{{ it.post.category.name }}</a></div><div class="where">{{ it.post.account.display_name }}, {{ it.post.account.get_platform_display }}</div></div>
+          <span class="badge {{ it.post.status }}">{{ it.post.get_status_display }}</span></li>
+      {% endfor %}
+      </ul>
+    {% empty %}<div class="empty">Nothing is scheduled for today or tomorrow.<br><a href="{% url 'accounts' %}">Add a category to an account</a> to fill your schedule.</div>{% endfor %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Recent activity</h2>
+    {% for p in recent %}
+      <div class="cat"><div><div class="t"><a href="{% url 'post_detail' p.pk %}">{{ p.category.name }}</a> to {{ p.account.display_name }}</div>
+        <div class="help">{% if p.error %}{{ p.error|truncatechars:70 }}{% else %}{{ p.updated_at|timesince }} ago{% endif %}</div></div><span class="badge {{ p.status }}">{{ p.get_status_display }}</span></div>
+    {% empty %}<div class="empty">No posts yet. Generate your first one from an account.</div>{% endfor %}
+  </div>
+</div>
+
+{% if impact.total %}
+<div class="grid g3" style="margin-top:20px">
+  <div class="card stat"><div class="n">{{ impact.total }}</div><div class="l">Posts published so far</div></div>
+  <div class="card stat"><div class="n">{{ impact.streak }} day{{ impact.streak|pluralize }}</div><div class="l">Posting streak{% if impact.top_category %}. Top topic: {{ impact.top_category }}{% endif %}</div></div>
+  <div class="card stat"><div class="n">~{{ impact.hours_saved }} h</div><div class="l">Time saved, at about 15 minutes a post</div></div>
+</div>
+{% endif %}
+
+<div class="card" style="margin-top:20px">
+  <div class="row" style="justify-content:space-between"><b>Posts used this month</b>
+    <span class="mono">{{ used }} of {{ limit }} &middot; AI cost ${{ ai_cost|floatformat:3 }}</span></div>
+  <div class="bar" style="margin-top:10px"><i style="width:{% widthratio used limit 100 %}%"></i></div>
+</div>
+{% endblock %}

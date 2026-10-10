@@ -1,0 +1,28 @@
+{% extends "web/base.html" %}
+{% block title %}Brand kit · PostPilot{% endblock %}
+{% block content %}
+<h1>Brand kit</h1>
+<p class="sub">Voice, colours and rules applied to every post and image card.</p>
+<div class="grid g2" style="align-items:start;max-width:1000px"><div class="card">
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for f in form %}
+      <label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+      {% if f.help_text %}<div class="help">{{ f.help_text }}</div>{% endif %}{{ f.errors }}
+    {% endfor %}
+    <p><button class="btn primary" type="submit">Save brand kit</button></p>
+  </form>
+</div>
+<div class="card"><b>Card preview</b>
+  <p class="help">This is how your image cards and Shorts will look.</p>
+  <img id="card-preview" class="preview" alt="Card preview" src="{% url 'card_preview' %}?theme={{ form.card_theme.value }}&amp;primary={{ form.primary_color.value|urlencode }}&amp;secondary={{ form.secondary_color.value|urlencode }}">
+</div></div>
+<script>
+(function(){
+  var img=document.getElementById('card-preview'),base="{% url 'card_preview' %}";
+  function val(n){var e=document.getElementById('id_'+n);return e?encodeURIComponent(e.value):'';}
+  function update(){img.src=base+'?theme='+val('card_theme')+'&primary='+val('primary_color')+'&secondary='+val('secondary_color');}
+  ['card_theme','primary_color','secondary_color'].forEach(function(n){var e=document.getElementById('id_'+n);if(e)e.addEventListener('change',update);});
+})();
+</script>
+{% endblock %}

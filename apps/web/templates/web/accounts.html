@@ -1,0 +1,61 @@
+{% extends "web/base.html" %}
+{% block title %}Accounts · PostPilot{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="page-eyebrow">CONNECTED CHANNELS</span><h1>Accounts</h1>
+    <p class="sub">Manage your publishing channels and connect new platforms. Credentials are encrypted and removed when you disconnect.</p></div>
+  <span class="queue-count"><strong>{{ accounts|length }}</strong> connected</span>
+</div>
+
+{% if not is_live %}<div class="notice">Pick a plan before connecting accounts. <a href="{% url 'billing' %}">Choose a plan</a></div>{% endif %}
+
+<div class="section-heading"><div><span class="page-eyebrow">YOUR CHANNELS</span><h2>Connected accounts</h2></div></div>
+<div class="card account-list">
+  {% for a in accounts %}
+  <div class="acct">
+    <span class="pm {{ a.platform }}" aria-hidden="true">{% if a.platform == 'instagram' %}IG{% elif a.platform == 'youtube' %}YT{% elif a.platform == 'facebook' %}f{% elif a.platform == 'x' %}X{% elif a.platform == 'linkedin' %}in{% else %}TG{% endif %}</span>
+    <div><div class="nm"><a href="{% url 'account_detail' a.pk %}">{{ a.display_name }}</a></div>
+      <div class="help" style="margin:0">{{ a.get_platform_display }}{% if a.handle %}, {{ a.handle }}{% endif %} &middot; {{ a.n_cats }} categor{{ a.n_cats|pluralize:"y,ies" }}</div></div>
+    <div><span class="badge {{ a.status }}">{{ a.get_status_display }}</span>{% if a.status == 'broken' or a.status == 'expiring' %}<div class="help">Sign in again below</div>{% endif %}</div>
+    <a class="btn small" href="{% url 'account_detail' a.pk %}">Manage</a>
+  </div>
+  {% empty %}<div class="empty">No accounts yet. Connect your first one below.</div>{% endfor %}
+</div>
+
+<div class="section-heading platform-heading"><div><span class="page-eyebrow">EXPAND YOUR REACH</span><h2>Connect a platform</h2>
+  <p class="help">Choose a platform below to start publishing from PostPilot.</p></div></div>
+<div class="plat-grid">
+  {% for p in platforms %}
+  <div class="card plat">
+    <div class="head"><span class="pm {{ p.code }}" aria-hidden="true">{% if p.code == 'instagram' %}IG{% elif p.code == 'youtube' %}YT{% elif p.code == 'facebook' %}f{% elif p.code == 'x' %}X{% elif p.code == 'linkedin' %}in{% else %}TG{% endif %}</span>{{ p.label }}</div>
+    <p class="help">
+      {% if p.code == 'telegram' %}Create a bot with @BotFather and add it as admin of your channel.
+      {% elif p.code == 'facebook' %}Sign in with Facebook and pick the Pages to connect.
+      {% elif p.code == 'instagram' %}Business or Creator account linked to a Facebook Page. Uses the same sign-in as Facebook.
+      {% elif p.code == 'youtube' %}Posts a vertical Short with your branded card. Needs the Pro plan or higher.
+      {% elif p.code == 'x' %}Posts text with an image card.
+      {% else %}Posts to your personal profile with an image card.{% endif %}
+    </p>
+    <div class="row">
+    {% if p.connected %}
+      {% if p.account.status == 'broken' or p.account.status == 'expiring' %}
+        <span class="badge {{ p.account.status }}">{{ p.account.get_status_display }}</span>
+        {% if p.oauth_ready %}<a class="btn primary small" href="{% url 'oauth_start' p.provider %}">Reconnect</a>{% endif %}
+      {% else %}<span class="badge active">Already connected</span>{% endif %}
+      <a class="btn small" href="{% url 'account_detail' p.account.pk %}">Manage account</a>
+    {% else %}
+    {% if p.manual %}
+      <a class="btn primary small" href="{% url 'connect' p.code %}">Connect</a>
+    {% elif p.oauth_ready %}
+      <a class="btn primary small" href="{% url 'oauth_start' p.provider %}">Sign in and connect</a>
+      {% if p.can_paste %}<a class="btn small" href="{% url 'connect' p.code %}">Paste a token instead</a>{% endif %}
+    {% else %}
+      <span class="badge">Not set up on this server</span>
+      {% if p.can_paste %}<a class="btn small" href="{% url 'connect' p.code %}">Paste a token</a>{% endif %}
+    {% endif %}
+    {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

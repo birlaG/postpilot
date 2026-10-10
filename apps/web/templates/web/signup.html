@@ -1,0 +1,17 @@
+{% extends "web/base.html" %}
+{% block title %}Create account · PostPilot{% endblock %}
+{% block auth %}
+<h1>Create your account</h1>
+<p class="sub">It takes a minute. You choose a plan next.</p>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <label for="id_name" style="margin-top:0">{{ form.name.label }}</label>{{ form.name }}{{ form.name.errors }}
+    <label for="id_email">Email</label>{{ form.email }}{{ form.email.errors }}
+    <label for="id_password">Password</label>{{ form.password }}{{ form.password.errors }}
+    <label for="id_country">{{ form.country.label }}</label>{{ form.country }}<div class="help">{{ form.country.help_text }}</div>{{ form.country.errors }}
+    <label for="id_timezone">{{ form.timezone.label }}</label>{{ form.timezone }}<div class="help">{{ form.timezone.help_text }}</div>{{ form.timezone.errors }}
+    <p><button class="btn primary" type="submit">Create account</button></p>
+  </form>
+<p class="help">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+<script>try{var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;var f=document.getElementById('id_timezone');if(tz&&f&&(!f.value||f.value==='UTC'))f.value=tz;}catch(e){}</script>
+{% endblock %}

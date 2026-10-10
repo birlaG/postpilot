@@ -1,0 +1,19 @@
+{% extends "web/base.html" %}
+{% block title %}Invite and earn · PostPilot{% endblock %}
+{% block content %}
+<h1>Invite and earn</h1>
+<p class="sub">Know a creator or a small business? When they subscribe with your link, you both get <b>{{ bonus_posts }} extra posts a month for {{ bonus_days }} days</b>.</p>
+<div class="card" style="max-width:640px">
+  <label>Your invite link</label>
+  <input type="text" readonly value="{{ link }}" onclick="this.select()" id="invite-link">
+  <p><button class="btn primary" type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('invite-link').value);this.textContent='Copied'">Copy link</button></p>
+  <p class="help">The reward is given after your friend's first successful payment, up to {{ max_rewards }} friends. You cannot invite yourself or another account of your own.</p>
+</div>
+<div class="grid g3" style="margin-top:14px;max-width:640px">
+  <div class="card stat"><div class="n">{{ signed_up }}</div><div class="l">Signed up with your link</div></div>
+  <div class="card stat"><div class="n">{{ paid }}</div><div class="l">Subscribed</div></div>
+  <div class="card stat"><div class="n">{{ bonuses|length }}</div><div class="l">Active bonuses</div></div>
+</div>
+{% if bonuses %}<div class="card" style="margin-top:14px;max-width:640px"><b>Your bonuses</b>
+  {% for b in bonuses %}<div class="cat"><div>+{{ b.extra_posts_per_month }} posts a month<div class="help">{{ b.reason }}</div></div><span class="help">until {{ b.expires_at|date:"j M Y" }}</span></div>{% endfor %}</div>{% endif %}
+{% endblock %}

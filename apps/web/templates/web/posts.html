@@ -1,0 +1,37 @@
+{% extends "web/base.html" %}
+{% block title %}All posts · PostPilot{% endblock %}
+{% block content %}
+<h1>All posts</h1>
+<p class="sub">Everything generated for this workspace, newest first.</p>
+<form method="get" class="row" style="margin-bottom:14px">
+  <label for="post-status" style="margin:0">Filter by status</label>
+  <select id="post-status" name="status" style="max-width:240px" onchange="this.form.submit()">
+    <option value="">All statuses</option>
+    {% for code, label in statuses %}<option value="{{ code }}" {% if code == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+</form>
+<div class="card">
+  {% if posts %}
+  <p class="help">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} posts.</p>
+  <table>
+    <tr><th>When ({{ request.workspace.timezone }})</th><th>Topic</th><th>Account</th><th>Post</th><th>Status</th></tr>
+    {% for p in posts %}
+    <tr><td class="mono">{{ p.scheduled_at|date:"j M H:i" }}</td><td>{{ p.category.name }}</td><td><span class="pm sm {{ p.account.platform }}" aria-hidden="true" style="vertical-align:middle;margin-right:6px">{% if p.account.platform == 'instagram' %}IG{% elif p.account.platform == 'youtube' %}YT{% elif p.account.platform == 'facebook' %}f{% elif p.account.platform == 'x' %}X{% elif p.account.platform == 'linkedin' %}in{% else %}TG{% endif %}</span>{{ p.account.display_name }}</td>
+      <td><a href="{% url 'post_detail' p.pk %}">{{ p.caption|truncatechars:70|default:"(empty)" }}</a>{% if p.error %}<div class="help" style="color:var(--bad)">{{ p.error|truncatechars:80 }}</div>{% endif %}</td>
+      <td><span class="badge {{ p.status }}">{{ p.get_status_display }}</span></td></tr>
+    {% endfor %}
+  </table>
+  {% if page_obj.has_other_pages %}
+  <nav class="pagination" aria-label="Post history pages">
+    {% if page_obj.has_previous %}
+      <a class="btn small" href="?{% if status %}status={{ status|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+    {% else %}<span class="btn small" aria-disabled="true">Previous</span>{% endif %}
+    <span class="help">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn small" href="?{% if status %}status={{ status|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+    {% else %}<span class="btn small" aria-disabled="true">Next</span>{% endif %}
+  </nav>
+  {% endif %}
+  {% else %}<div class="empty">No posts found.</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PostPilot · Fresh posts on every channel, every day</title>
+  <meta name="description" content="Pick your topics, connect YouTube, Instagram, Facebook, X and LinkedIn, and PostPilot writes, designs and publishes fresh posts every day.">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap">
+  <link rel="stylesheet" href="{% static 'web/app.css' %}">
+  <style>
+    .lp { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+    .lp-top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .lp-top .brand-mark { padding: 0; }
+    .lp-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; align-items: center; padding: 72px 0 76px; }
+    .lp-eyebrow { display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel); color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .045em; margin-bottom: 20px; box-shadow: var(--shadow-card); }
+    .lp-eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px var(--good-soft); }
+    .lp-hero h1 { font-size: clamp(36px, 5.4vw, 60px); line-height: 1.04; letter-spacing: -2px; margin: 0 0 18px; }
+    .lp-hero p { font-size: 18px; color: var(--muted); max-width: 46ch; margin: 0 0 28px; }
+    .lp-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .lp-cta .btn { padding: 13px 24px; font-size: 16px; }
+    .lp-plat { margin-top: 26px; color: var(--muted); font-size: 14px; }
+    .lp-plat b { color: var(--ink); font-weight: 600; }
+    .lp-sample { padding: 24px 26px 12px; box-shadow: var(--shadow-float); transform: rotate(1deg); }
+    .lp-sample h2 { margin: 0 0 4px; font-size: 17px; }
+    .lp-sec { padding: 64px 0; border-top: 1px solid var(--line); }
+    .lp-sec h2 { font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -1.1px; margin: 0 0 10px; line-height: 1.1; }
+    .lp-lead { color: var(--muted); max-width: 58ch; margin: 0 0 28px; font-size: 17px; }
+    .lp-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; list-style: none; margin: 0; padding: 0; counter-reset: s; }
+    .lp-steps li { counter-increment: s; border-top: 3px solid var(--sun); padding-top: 14px; }
+    .lp-steps li::before { content: counter(s); font: 700 15px var(--font-head); color: var(--muted); display: block; margin-bottom: 4px; }
+    .lp-steps b { display: block; font: 650 18px var(--font-head); margin-bottom: 4px; } .lp-steps span { color: var(--muted); }
+    .lp-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 28px; list-style: none; margin: 0; padding: 0; }
+    .lp-topics li { padding: 9px 0; border-bottom: 1px solid var(--line); font-weight: 500; }
+    .lp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .lp-themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+    .lp-themes img { width: 100%; border-radius: var(--r-md); border: 1px solid var(--line); display: block; }
+    .lp-themes span { display: block; color: var(--muted); font-size: 13px; margin-top: 5px; }
+    .lp-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .lp-plans ul { padding-left: 18px; margin: 12px 0 18px; color: var(--muted); }
+    .lp-foot { padding: 32px 0 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+    @media (max-width: 860px) { .lp-hero, .lp-two { grid-template-columns: 1fr; gap: 32px; } .lp-steps { grid-template-columns: 1fr 1fr; } .lp-hero { padding: 48px 0 56px; } .lp-sample { transform: none; } }
+    @media (max-width: 520px) { .lp { padding: 0 18px; } .lp-steps { grid-template-columns: 1fr; } .lp-top .row .btn:first-child { display: none; } .lp-hero { padding: 38px 0 44px; } }
+  </style>
+</head>
+<body>
+<div class="lp">
+  <div class="lp-top"><div class="brand-mark">Post<span>Pilot</span></div>
+    <div class="row"><a class="btn" href="{% url 'login' %}">Log in</a><a class="btn primary" href="{% url 'signup' %}">Get started</a></div></div>
+
+  <header class="lp-hero">
+    <div>
+      <div class="lp-eyebrow">AI-powered social publishing</div>
+      <h1>Your posts get written and sent while you work.</h1>
+      <p>Pick your topics and connect your accounts. Claude writes each post, designs the card or Short, and publishes on schedule, or waits for your approval.</p>
+      <div class="lp-cta"><a class="btn primary" href="{% url 'signup' %}">Create your account</a><span class="help">Plans from ${{ plans.0.price_usd }} a month. No free tier.</span></div>
+      <div class="lp-plat"><b>Publishes to</b> {{ platforms|join:", " }}</div>
+    </div>
+    <div class="card lp-sample" aria-label="Example of a day's schedule">
+      <h2>Today</h2><div class="help">An example day for one creator</div>
+      <ul class="tl" style="margin-top:6px">
+        <li><span class="time">07:30</span><span class="dot published"></span><div><div class="what">Tech explained</div><div class="where">YouTube Short</div></div><span class="badge published">Published</span></li>
+        <li><span class="time">09:00</span><span class="dot published"></span><div><div class="what">Daily motivation</div><div class="where">Instagram</div></div><span class="badge published">Published</span></li>
+        <li><span class="time">12:30</span><span class="dot pending_approval"></span><div><div class="what">Trending news</div><div class="where">LinkedIn</div></div><span class="badge pending_approval">Needs approval</span></li>
+        <li><span class="time">18:00</span><span class="dot queued"></span><div><div class="what">Podcast highlights</div><div class="where">X</div></div><span class="badge queued">Queued</span></li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="lp-sec">
+    <h2>Set up once, in about five minutes</h2>
+    <p class="lp-lead">After that, the daily work is a tap to approve, or nothing at all.</p>
+    <ol class="lp-steps">
+      <li><b>Connect</b><span>Sign in to your YouTube, Instagram, Facebook, X, LinkedIn or Telegram account.</span></li>
+      <li><b>Choose topics</b><span>Trending news, podcasts, jokes, tech, spiritual and more, or a show you follow.</span></li>
+      <li><b>Claude creates</b><span>Original posts, image cards and Shorts, in your colours, voice and language.</span></li>
+      <li><b>You decide</b><span>Publish automatically, or review each post first.</span></li>
+    </ol>
+  </section>
+
+  <section class="lp-sec">
+    <h2>{{ categories|length }} topics, each with its own rules</h2>
+    <p class="lp-lead">Every topic has writing guidelines and safety checks built in.</p>
+    <ul class="lp-topics">{% for c in categories %}<li>{{ c.icon }}&nbsp; {{ c.name }}</li>{% endfor %}</ul>
+  </section>
+
+  <section class="lp-sec lp-two">
+    <div>
+      <h2>Turn the shows you follow into posts</h2>
+      <p class="lp-lead" style="margin:0">Add a podcast, interview show, YouTube channel or blog. Each new episode can become a post that credits the creator and links to the original.</p>
+    </div>
+    <div class="card"><div class="cat" style="padding-top:0"><div><div class="t">Founders Talk, new episode</div><div class="help">How she built a bakery without a loan</div></div><span class="badge pending_approval">Draft ready</span></div>
+      <div class="post-text" style="margin-top:12px">New on Founders Talk: a baker explains why she hired slowly and stayed small for two years. Worth a listen if you are starting out.</div></div>
+  </section>
+
+  <section class="lp-sec">
+    <h2>Cards that look like your brand</h2>
+    <p class="lp-lead">Choose a style, your colours and your watermark. The same look carries into your Shorts.</p>
+    <div class="lp-themes">{% for code, label in themes %}<div><img loading="lazy" width="270" height="270" alt="{{ label }} card" src="{% url 'card_preview' %}?theme={{ code }}"><span>{{ label }}</span></div>{% endfor %}</div>
+  </section>
+
+  <section class="lp-sec">
+    <h2>Safe by default</h2>
+    <p class="lp-lead" style="margin:0">An independent AI review checks every post. Sensitive topics like news, finance and health wait for your approval unless you choose otherwise, and any post that fails a check is never published.</p>
+  </section>
+
+  <section class="lp-sec">
+    <h2>Pricing</h2>
+    <p class="lp-lead">Every plan is paid, and you can cancel any time. Prices in US dollars, or rupees in India.</p>
+    <div class="lp-plans">
+      {% for p in plans %}<div class="card plan"><b style="font:650 18px var(--font-head)">{{ p.name }}</b>
+        <div class="price" style="margin-top:6px">${{ p.price_usd }}<small> a month</small></div><div class="help">or &#8377;{{ p.price_inr }} a month</div>
+        <ul><li>{{ p.max_accounts }} connected accounts</li><li>{{ p.posts_per_month }} posts a month</li><li>{% if p.allow_video %}Shorts videos included{% else %}Text and image posts{% endif %}</li></ul>
+        <a class="btn primary" href="{% url 'signup' %}">Choose {{ p.name }}</a></div>{% endfor %}
+    </div>
+  </section>
+
+  <footer class="lp-foot">&copy; PostPilot. AI-written content can contain mistakes, so review sensitive posts before they go out.</footer>
+</div>
+</body>
+</html>

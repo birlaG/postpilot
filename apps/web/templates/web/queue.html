@@ -1,0 +1,38 @@
+{% extends "web/base.html" %}
+{% block title %}Approval queue · PostPilot{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="page-eyebrow">CONTENT WORKFLOW</span><h1>Approval queue</h1>
+    <p class="sub">Review each post before it goes out. Approved posts publish at their scheduled time.</p></div>
+  <span class="queue-count"><strong>{{ posts|length }}</strong> waiting</span>
+</div>
+{% for p in posts %}
+<article class="card review">
+  {% if p.video_path %}<video class="thumb" src="{{ p.video_url }}" muted playsinline controls preload="metadata"></video>
+  {% elif p.media_path %}<img class="thumb" src="{{ p.media_url }}" alt="{{ p.alt_text }}">
+  {% else %}<div class="thumb none">Text-only post</div>{% endif %}
+  <div>
+    <div class="meta"><span class="pm sm {{ p.account.platform }}" aria-hidden="true">{% if p.account.platform == 'instagram' %}IG{% elif p.account.platform == 'youtube' %}YT{% elif p.account.platform == 'facebook' %}f{% elif p.account.platform == 'x' %}X{% elif p.account.platform == 'linkedin' %}in{% else %}TG{% endif %}</span>
+      <div class="review-title"><b>{{ p.category.name }}</b><span>{{ p.account.display_name }} · {{ p.account.get_platform_display }}</span></div>
+      <span class="badge {{ p.status }}">{{ p.get_status_display }}</span></div>
+    <div class="help" style="margin:0">Scheduled for {{ p.scheduled_at|date:"D j M, H:i" }} {{ request.workspace.timezone }}</div>
+    <div class="txt">{{ p.caption|truncatechars:420|default:"Still generating. Check back in a minute." }}</div>
+    {% for f in p.risk_flags %}<span class="flag">&#9873; {{ f }}</span>{% endfor %}
+    {% if p.review_notes and p.status == 'needs_review' %}<div class="help">Reviewer: {{ p.review_notes|truncatechars:160 }}</div>{% endif %}
+    {% if p.dry_run %}<div class="help">Dry run: for testing only, cannot be approved.</div>{% endif %}
+    {% if p.error %}<div class="help" style="color:var(--bad)">{{ p.error|truncatechars:120 }}</div>{% endif %}
+    {% if p.caption %}
+    <form method="post" action="{% url 'post_detail' p.pk %}" class="acts">{% csrf_token %}
+      <input type="hidden" name="caption" value="{{ p.caption }}"><input type="hidden" name="hashtags" value="{{ p.hashtags|join:' ' }}">
+      <button class="btn primary small" name="action" value="approve" type="submit" {% if not p.can_approve %}disabled{% endif %}>Approve</button>
+      <a class="btn small" href="{% url 'post_detail' p.pk %}">Edit</a>
+      <button class="btn small" name="action" value="regenerate" type="submit">Write another</button>
+      <button class="btn small danger" name="action" value="reject" type="submit">Reject</button>
+    </form>
+    {% endif %}
+  </div>
+</article>
+{% empty %}
+<div class="card empty queue-empty"><span class="empty-mark" aria-hidden="true">&#10003;</span><b>All caught up</b><p>Nothing needs your approval right now. New posts will appear here when they’re ready.</p><a class="btn" href="{% url 'accounts' %}">View accounts</a></div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "web/base.html" %}
+{% block title %}Followed sources · PostPilot{% endblock %}
+{% block content %}
+<h1>Followed sources</h1>
+<p class="sub">Follow a podcast, interview show, YouTube channel or site. Each new episode or video can become a post that credits the creator and links to the original.</p>
+
+<div class="card" style="max-width:640px">
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <label for="{{ form.url.id_for_label }}">{{ form.url.label }}</label>{{ form.url }}
+    <div class="help">{{ form.url.help_text }}</div>{{ form.url.errors }}
+    <label for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>{{ form.kind }}
+    <p><button class="btn primary" type="submit">Follow</button></p>
+  </form>
+  <p class="help">Posts are written from the title and description only, in our own words. We never download or transcribe the audio or video.
+     Only follow content you are allowed to promote, and keep the credit and link on.</p>
+</div>
+
+<h2>Your sources</h2>
+{% for s in sources %}
+<div class="card cat">
+  <div><div class="t">{{ s.name }} <span class="badge">{{ s.get_kind_display }}</span> {% if not s.enabled %}<span class="badge">Paused</span>{% endif %}</div>
+    <div class="help">{{ s.n_items }} recent items &middot; used on {{ s.n_accounts }} account{{ s.n_accounts|pluralize }}
+      {% if s.last_error %}&middot; <span style="color:var(--bad)">{{ s.last_error }}</span>{% elif s.last_fetched_at %}&middot; checked {{ s.last_fetched_at|timesince }} ago{% endif %}</div></div>
+  <div class="row">
+    <form class="inline" method="post" action="{% url 'source_action' s.pk 'refresh' %}">{% csrf_token %}<button class="btn small" type="submit">Check now</button></form>
+    <form class="inline" method="post" action="{% url 'source_action' s.pk 'delete' %}" onsubmit="return confirm('Stop following?')">{% csrf_token %}<button class="btn small danger" type="submit">Remove</button></form>
+  </div>
+</div>
+{% empty %}<div class="empty">Nothing followed yet.</div>{% endfor %}
+{% endblock %}
