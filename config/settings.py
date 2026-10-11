@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -47,6 +48,14 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
+
+if not DEBUG:
+    if SECRET_KEY == "dev-insecure-change-me-in-production":
+        raise ImproperlyConfigured("Set DJANGO_SECRET_KEY before running with DJANGO_DEBUG=0.")
+    if not env("POSTGRES_DB"):
+        raise ImproperlyConfigured("Set POSTGRES_DB before running with DJANGO_DEBUG=0.")
+    if not env("FERNET_KEY"):
+        raise ImproperlyConfigured("Set FERNET_KEY before running with DJANGO_DEBUG=0.")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

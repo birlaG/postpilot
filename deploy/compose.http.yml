@@ -1,0 +1,4 @@
+services:
+  nginx:
+    volumes:
+      - ./deploy/nginx-http.conf:/etc/nginx/conf.d/default.conf:ro

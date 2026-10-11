@@ -1,39 +1,189 @@
-# Deploying to a Contabo (Ubuntu) VPS
+# Deploying to a Contabo VPS
 
-1. **Server basics**
-   ```bash
-   apt update && apt install -y docker.io docker-compose-plugin ufw
-   ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw enable
-   ```
-2. **Code and config**
-   ```bash
-   git clone <your repo> /opt/postpilot && cd /opt/postpilot
-   cp .env.example .env && nano .env     # fill every value; set DJANGO_DEBUG=0
-   ```
-3. **First start (HTTP only)**: in `deploy/nginx.conf` comment out the `443` server block and the
-   `301` redirect, then `docker compose up -d --build`.
-4. **Certificate**
-   ```bash
-   docker run --rm -v postpilot_certs:/etc/letsencrypt -v postpilot_acme:/var/www/certbot \
-     certbot/certbot certonly --webroot -w /var/www/certbot -d yourdomain.com -d www.yourdomain.com \
-     --email you@example.com --agree-tos
-   ```
-   Restore the `443` block and run `docker compose restart nginx`.
-5. **Admin user and plans**
-   ```bash
-   docker compose exec web python manage.py createsuperuser
-   ```
-   Open `/admin/`, set each paid Plan's `razorpay_plan_id`.
-6. **Backups** (nightly cron):
-   ```bash
-   0 2 * * * cd /opt/postpilot && docker compose exec -T db pg_dump -U postpilot postpilot | gzip > /var/backups/postpilot-$(date +\%F).sql.gz
-   ```
-7. **Updates**: `git pull && docker compose up -d --build` (migrations run on web start).
-8. **Scaling later**: move `worker-generate` and `worker-publish` to a second VPS pointing at the same
-   `REDIS_URL` and Postgres; add `--scale worker-generate=3`.
+These steps assume a fresh Contabo VPS running Ubuntu 24.04 LTS, a domain you control, and
+the repository checked out at `/opt/postpilot`. Run server commands as `root` (or prefix
+them with `sudo`). Do not send `.env` or private keys in chat or commit them to Git.
 
-Logs: `docker compose logs -f worker-generate worker-publish beat`. Add Sentry by installing
-`sentry-sdk` and calling `sentry_sdk.init(dsn=...)` in `config/settings.py` when `SENTRY_DSN` is set.
+## 1. Point your domain at the VPS
+
+In your DNS provider, create `A` records for `yourdomain.com` and `www.yourdomain.com`
+pointing to the VPS IPv4 address. Add `AAAA` records only if IPv6 is configured and
+reachable on the VPS. Wait until the records resolve before requesting HTTPS certificates.
+
+## 2. Update the server and install Docker
+
+```bash
+apt update && apt -y upgrade
+apt install -y docker.io docker-compose-v2 ufw git openssl
+systemctl enable --now docker
+docker --version
+docker compose version
+```
+
+If Ubuntu cannot find `docker-compose-v2`, use Contabo's Ubuntu 24.04 image or install
+Docker Engine and the Compose plugin from Docker's official Ubuntu repository.
+
+Open only SSH and web traffic in the VPS firewall:
+
+```bash
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+ufw status
+```
+
+Also check the Contabo firewall/security settings in the control panel, if enabled, and
+allow inbound TCP ports 22, 80, and 443 there. Keep your current SSH session open while
+enabling the firewall so you can recover if SSH access is blocked.
+
+## 3. Get the code and create production secrets
+
+Use your repository URL; for a private repository, configure read-only SSH deploy-key
+access for this VPS before cloning.
+
+```bash
+git clone <repository-url> /opt/postpilot
+cd /opt/postpilot
+cp .env.example .env
+chmod 600 .env
+```
+
+Generate independent Django and database secrets. Put each output into its matching
+variable in `.env` (`DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD`):
+
+```bash
+openssl rand -hex 48
+openssl rand -hex 32
+```
+
+Set `DJANGO_DEBUG=0`, `DJANGO_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com`,
+`DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com`,
+`PUBLIC_BASE_URL=https://yourdomain.com`, `POSTGRES_HOST=db`, and `REDIS_URL=redis://redis:6379/0`.
+Keep the database name and user as `postpilot` unless you also update the backup commands.
+
+Build the app image, then generate a Fernet encryption key for `FERNET_KEY`. Save it
+somewhere secure as well as in `.env`: losing it makes saved social-platform tokens
+unreadable.
+
+```bash
+docker compose build web
+docker compose run --rm --no-deps web python -c \
+  "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+nano .env
+```
+
+Copy the printed key into `FERNET_KEY`. Fill in the third-party API credentials as you
+create each provider/payment app; those integrations can be added after the site is up.
+Never leave the example Django secret or database password in `.env`.
+
+Validate Compose configuration without printing its resolved secrets:
+
+```bash
+docker compose config -q
+```
+
+## 4. Start temporarily over HTTP
+
+The temporary config serves the ACME challenge and proxies the health endpoint. Do not
+use this HTTP-only state for accounts or real user data.
+
+```bash
+docker compose -f docker-compose.yml -f deploy/compose.http.yml up -d --build
+docker compose ps
+curl -fsS http://yourdomain.com/health/
+```
+
+The health request should return `ok`. If it does not, inspect
+`docker compose logs --tail=100 web nginx db` before continuing.
+
+## 5. Obtain the HTTPS certificate
+
+Replace the email and domain values below with the address and DNS name you control:
+
+```bash
+docker compose run --rm certbot certonly --webroot -w /var/www/certbot \
+  -d yourdomain.com -d www.yourdomain.com \
+  --email you@example.com --agree-tos --no-eff-email
+```
+
+Edit `deploy/nginx.conf` and replace every `yourdomain.com` with your real domain. Confirm
+the certificate paths use the same primary domain passed to Certbot.
+
+Switch from the HTTP bootstrap configuration to the HTTPS configuration and recreate Nginx:
+
+```bash
+docker compose up -d --force-recreate nginx
+curl -fsS https://yourdomain.com/health/
+```
+
+The normal Compose command uses `deploy/nginx.conf`; do not keep passing the HTTP override
+after this step.
+
+Schedule certificate renewal. Open root's crontab with `crontab -e` and add:
+
+```cron
+17 3 * * * cd /opt/postpilot && /usr/bin/docker compose run --rm certbot renew --quiet && /usr/bin/docker compose exec -T nginx nginx -s reload >> /var/log/postpilot-certbot.log 2>&1
+```
+
+The certbot service shares the certificate and challenge volumes with Nginx. Renewal checks
+those existing certificates and Nginx reloads to use renewed files.
+
+## 6. Create the admin account and configure the app
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+Open `https://yourdomain.com/admin/`. Configure plans and payment-provider IDs there. Set
+up OAuth redirect URLs and payment webhooks only after their provider apps are created; the
+URLs and provider notes are below.
+
+## 7. Set up database backups
+
+Create a private backup directory:
+
+```bash
+install -d -m 700 /var/backups/postpilot
+```
+
+Add this nightly job to root's crontab. The script checks the gzip archive before replacing
+the day's backup and removes incomplete temporary files on errors.
+
+```cron
+0 2 * * * /bin/bash /opt/postpilot/deploy/backup-db.sh >> /var/log/postpilot-backup.log 2>&1
+```
+
+Run `/bin/bash /opt/postpilot/deploy/backup-db.sh` once manually and confirm the archive is
+created. Periodically test a restore on a separate test database/server before relying on
+backups. Back up the persistent `postpilot_media` Docker volume as well; it contains
+uploads/generated images. Keep encrypted copies of database and media backups off the VPS.
+
+## 8. Verify and update
+
+Useful checks:
+
+```bash
+docker compose ps
+docker compose logs --tail=100 web worker-generate worker-publish beat nginx
+curl -fsS https://yourdomain.com/health/
+```
+
+To deploy a later Git update:
+
+```bash
+cd /opt/postpilot
+git pull
+docker compose up -d --build
+docker compose ps
+```
+
+Database migrations run when the web container starts. Take a database backup before
+deploying changes that include migrations.
+
+Scaling later: move `worker-generate` and `worker-publish` to another VPS configured with
+private access to the same Redis and PostgreSQL services; do not expose those services to
+the public internet. Scale a worker with `docker compose up -d --scale worker-generate=3`.
 
 ## Platform developer apps (needed before users can connect)
 
