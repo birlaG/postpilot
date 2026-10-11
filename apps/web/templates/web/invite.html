@@ -2,18 +2,20 @@
 {% block title %}Invite and earn · PostPilot{% endblock %}
 {% block content %}
 <h1>Invite and earn</h1>
-<p class="sub">Know a creator or a small business? When they subscribe with your link, you both get <b>{{ bonus_posts }} extra posts a month for {{ bonus_days }} days</b>.</p>
+<p class="sub">Invite a creator or small business. When they make their first successful subscription payment, you earn <b>{{ reward_usd }}</b> for USD payments or <b>{{ reward_inr }}</b> for INR payments, up to {{ max_rewards }} successful referrals.</p>
 <div class="card" style="max-width:640px">
   <label>Your invite link</label>
   <input type="text" readonly value="{{ link }}" onclick="this.select()" id="invite-link">
   <p><button class="btn primary" type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('invite-link').value);this.textContent='Copied'">Copy link</button></p>
-  <p class="help">The reward is given after your friend's first successful payment, up to {{ max_rewards }} friends. You cannot invite yourself or another account of your own.</p>
+  <p class="help">Wallet rewards are promotional credit, not cash and cannot be withdrawn. They go only to the referrer after the friend's first successful payment. Credit stays in its earned currency and can be used once at a new subscription checkout; it does not reduce automatic renewals. You cannot invite yourself or another account of your own.</p>
 </div>
 <div class="grid g3" style="margin-top:14px;max-width:640px">
-  <div class="card stat"><div class="n">{{ signed_up }}</div><div class="l">Signed up with your link</div></div>
-  <div class="card stat"><div class="n">{{ paid }}</div><div class="l">Subscribed</div></div>
-  <div class="card stat"><div class="n">{{ bonuses|length }}</div><div class="l">Active bonuses</div></div>
+  <div class="card stat"><div class="n">{{ wallet_usd }}</div><div class="l">USD wallet</div></div>
+  <div class="card stat"><div class="n">{{ wallet_inr }}</div><div class="l">INR wallet</div></div>
+  <div class="card stat"><div class="n">{{ signed_up }} / {{ paid }}</div><div class="l">Signups / successful payments</div></div>
 </div>
-{% if bonuses %}<div class="card" style="margin-top:14px;max-width:640px"><b>Your bonuses</b>
+{% if wallet_entries %}<div class="card" style="margin-top:14px;max-width:640px"><b>Wallet activity</b>
+  {% for entry in wallet_entries %}<div class="cat"><div>{{ entry.get_kind_display }}<div class="help">{{ entry.reason }} · {{ entry.get_status_display }}</div></div><b>{{ entry.formatted_amount }}</b></div>{% endfor %}</div>{% endif %}
+{% if bonuses %}<div class="card" style="margin-top:14px;max-width:640px"><b>Previously earned post bonuses</b>
   {% for b in bonuses %}<div class="cat"><div>+{{ b.extra_posts_per_month }} posts a month<div class="help">{{ b.reason }}</div></div><span class="help">until {{ b.expires_at|date:"j M Y" }}</span></div>{% endfor %}</div>{% endif %}
 {% endblock %}

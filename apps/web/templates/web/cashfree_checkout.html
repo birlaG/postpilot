@@ -1,0 +1,30 @@
+{% extends "web/base.html" %}
+{% block title %}Secure recurring checkout · PostPilot{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px;margin:40px auto;text-align:center">
+  <span class="page-eyebrow">SECURE PAYMENT</span>
+  <h1>Continue to Cashfree</h1>
+  <p class="sub">Complete authorization to enable monthly recurring payments. Your plan activates after Cashfree confirms your subscription.</p>
+  <p id="checkout-status" role="status">Opening Cashfree checkout…</p>
+  <a class="btn" href="{% url 'billing' %}">Return to billing</a>
+</div>
+{{ session_id|json_script:"cashfree-session-id" }}
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
+  (async () => {
+    const status = document.getElementById("checkout-status");
+    try {
+      if (!window.Cashfree) {
+        throw new Error("Cashfree checkout could not be loaded. Check your connection and try again.");
+      }
+      const cashfree = Cashfree({mode: "{{ environment }}"});
+      await cashfree.subscriptionsCheckout({
+        subsSessionId: JSON.parse(document.getElementById("cashfree-session-id").textContent),
+        redirectTarget: "_self"
+      });
+    } catch (error) {
+      status.textContent = error.message || "Cashfree checkout could not be opened. Please try again.";
+    }
+  })();
+</script>
+{% endblock %}

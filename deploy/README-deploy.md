@@ -202,6 +202,34 @@ users can connect; that is enough to test the whole flow.
 
 - **Stripe** (USD): create three monthly recurring prices, paste ids into each Plan's `stripe_price_id`,
   add the webhook above, set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
-- **Razorpay** (INR): create three monthly plans, paste ids into `razorpay_plan_id`, add the webhook.
+- **Razorpay** (INR primary): create three monthly plans, paste ids into `razorpay_plan_id`, add the webhook.
+  If Razorpay credentials are absent, Cashfree can provide INR recurring autopay instead. Create a Cashfree
+  account with Subscriptions enabled, copy its API client ID and secret into `CASHFREE_CLIENT_ID` and
+  `CASHFREE_CLIENT_SECRET`, set `CASHFREE_ENVIRONMENT=sandbox` while testing, and switch it to `production`
+  only after end-to-end sandbox verification. `CASHFREE_API_VERSION` defaults to `2026-01-01`.
+  The app creates a monthly periodic mandate for the selected INR plan and launches authorization with
+  Cashfree's hosted JavaScript checkout. Customers enter a 10-digit Indian mobile number during checkout;
+  this number is sent to Cashfree and is not stored by PostPilot. Cashfree's webhook URL is
+  `https://yourdomain.com/billing/webhook/cashfree/`; configure `SUBSCRIPTION_STATUS_CHANGED`,
+  `SUBSCRIPTION_AUTH_STATUS`, `SUBSCRIPTION_PAYMENT_SUCCESS`, and `SUBSCRIPTION_PAYMENT_FAILED`.
+  Cashfree validates webhooks with `CASHFREE_CLIENT_SECRET`. If both gateways are configured, Razorpay
+  remains primary. Cashfree checkout requires recurring subscriptions and does not fall back to one-time
+  payment or manual renewal.
+- Referral wallet defaults are `$0.50` for a referred customer's first successful USD payment and
+  `₹50` for their first successful INR payment. Configure the amounts in cents/paise with
+  `REFERRAL_REWARD_USD_CENTS` and `REFERRAL_REWARD_INR_PAISE`, and set `REFERRAL_MAX_REWARDS`
+  for the per-referrer cap. Ensure Stripe sends `invoice.paid`, Razorpay sends
+  `subscription.charged`, and Cashfree sends `SUBSCRIPTION_PAYMENT_SUCCESS`; only confirmed
+  payments earn rewards.
+- Wallet credit is promotional and non-withdrawable. It stays in its earned currency and can be
+  used once during a new subscription checkout; it does not discount automatic renewals. Stripe
+  discounts are created for the checkout. For INR, create a one-time ₹50 subscription offer in
+  Razorpay, put its `offer_id` in `RAZORPAY_REFERRAL_OFFER_ID`, and make sure the offer is valid
+  for API-created subscriptions. Razorpay's offer is a fixed ₹50, so a checkout redeems one ₹50
+  reward; remaining balance stays in the wallet. Active subscriptions must be cancelled with the
+  provider before a customer can start a new checkout with wallet credit, to avoid duplicate
+  subscriptions. Previously earned monthly-post referral bonuses remain unchanged.
+- INR wallet redemption currently requires the Razorpay offer and is intentionally unavailable through
+  Cashfree; Cashfree subscription amounts are not reduced because that would also alter future renewals.
 - Prices in `seed_plans` (USD 9 / 29 / 99, INR 599 / 1999 / 7499) are proposals. Edit them in `/admin/`
   and make sure the Stripe/Razorpay prices match.

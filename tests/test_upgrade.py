@@ -523,17 +523,19 @@ class ReferralTests(BaseCase):
         self.assertTrue(Referral.objects.filter(referrer=owner, referred=friend, rewarded_at__isnull=True).exists())
         self.assertFalse(BonusCredit.objects.exists())
 
-    def test_first_payment_rewards_both_once_and_raises_limit(self):
+    def test_first_payment_rewards_only_referrer_once(self):
         from apps.billing import referrals
-        from apps.billing.models import BonusCredit
+        from apps.billing.models import BonusCredit, WalletEntry
         _, owner, *_ = make_workspace(email="o2@example.com")
         _, friend = self.signup("friend2@example.com", owner.referral_code)
-        base = billing.post_limit(owner)
         billing._mark(friend.subscription, "active")
-        billing._mark(friend.subscription, "active")  # a renewal must not pay twice
-        self.assertEqual(BonusCredit.objects.count(), 2)
-        self.assertEqual(billing.post_limit(owner), base + 50)
-        self.assertEqual(billing.post_limit(friend), friend.subscription.plan.posts_per_month + 50)
+        self.assertTrue(referrals.reward_if_first_payment(friend, "USD"))
+        self.assertFalse(referrals.reward_if_first_payment(friend, "USD"))
+        self.assertEqual(WalletEntry.objects.filter(workspace=owner).count(), 1)
+        self.assertEqual(billing.wallet_balance(owner, "USD"), 50)
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 0)
+        self.assertEqual(WalletEntry.objects.filter(workspace=friend).count(), 0)
+        self.assertEqual(BonusCredit.objects.count(), 0)
 
     def test_expired_bonus_does_not_count(self):
         from datetime import timedelta
@@ -555,19 +557,23 @@ class ReferralTests(BaseCase):
         self.assertEqual(Referral.objects.count(), 0)
 
     def test_reward_cap(self):
-        from apps.billing.models import BonusCredit
+        from apps.billing import referrals
+        from apps.billing.models import WalletEntry
         _, owner, *_ = make_workspace(email="o5@example.com")
         with override_settings(REFERRAL_MAX_REWARDS=1):
             for i in range(2):
                 _, f = self.signup(f"cap{i}@example.com", owner.referral_code)
-                billing._mark(f.subscription, "active")
-        self.assertEqual(BonusCredit.objects.filter(workspace=owner).count(), 1)
+                referrals.reward_if_first_payment(f, "INR")
+        self.assertEqual(WalletEntry.objects.filter(workspace=owner, kind="referral").count(), 1)
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 5000)
 
     def test_invite_page(self):
         user, ws, *_ = make_workspace(email="o6@example.com")
         c = Client()
         c.force_login(user)
         self.assertContains(c.get("/invite/"), f"ref={ws.referral_code}")
+        self.assertContains(c.get("/invite/"), "$0.50")
+        self.assertContains(c.get("/invite/"), "₹50.00")
 
 
 class BestTimeTests(BaseCase):

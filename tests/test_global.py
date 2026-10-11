@@ -1,4 +1,5 @@
 """Worldwide, paid-only and multi-platform behaviour."""
+import base64
 import hashlib
 import hmac
 import json
@@ -12,7 +13,7 @@ from django.test import Client, override_settings
 from django.utils import timezone
 
 from apps.billing import services as billing
-from apps.billing.models import Plan, Subscription
+from apps.billing.models import Plan, Subscription, WalletEntry
 from apps.content import media, trends
 from apps.content.models import Post, TrendItem
 from apps.content.pipeline import run_generation
@@ -62,6 +63,61 @@ class StripeBillingTests(BaseCase):
             client.post("/billing/webhook/stripe/", body, content_type="application/json", HTTP_STRIPE_SIGNATURE=sig)
             self.assertEqual(Subscription.objects.get(workspace=ws).status, expected)
 
+    def test_referral_reward_is_granted_only_after_a_paid_stripe_invoice(self):
+        from apps.billing import referrals
+
+        _, owner, _, _ = make_workspace(email="wallet-owner@example.com")
+        _, friend, _, _ = make_workspace(email="wallet-friend@example.com", paid=False)
+        referrals.attach(friend, owner.referral_code)
+        sub = friend.subscription
+        sub.provider = "stripe"
+        sub.external_id = ""
+        sub.save()
+
+        billing._mark(sub, "active")
+        self.assertEqual(billing.wallet_balance(owner, "USD"), 0)
+        event = {
+            "type": "invoice.paid",
+            "data": {"object": {
+                "parent": {"subscription_details": {
+                    "subscription": "sub_referred",
+                    "metadata": {"workspace_id": str(friend.pk)},
+                }},
+                "lines": {"data": []},
+            }},
+        }
+        self.assertTrue(billing.handle_stripe_event(event))
+        self.assertEqual(billing.wallet_balance(owner, "USD"), 50)
+        billing.handle_stripe_event(event)
+        self.assertEqual(billing.wallet_balance(owner, "USD"), 50)
+
+    def test_razorpay_referral_reward_is_granted_once_on_a_successful_charge(self):
+        from apps.billing import referrals
+
+        _, owner, _, _ = make_workspace(email="wallet-owner-inr@example.com")
+        _, friend, _, _ = make_workspace(email="wallet-friend-inr@example.com", paid=False)
+        referrals.attach(friend, owner.referral_code)
+        sub = friend.subscription
+        sub.provider = "razorpay"
+        sub.external_id = "sub_referred_inr"
+        sub.save()
+        event = {
+            "event": "subscription.charged",
+            "payload": {"subscription": {"entity": {
+                "id": "sub_referred_inr", "current_end": 1893456000,
+            }}},
+        }
+
+        billing.handle_razorpay_event({
+            "event": "subscription.activated",
+            "payload": event["payload"],
+        })
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 0)
+        self.assertTrue(billing.handle_razorpay_event(event))
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 5000)
+        billing.handle_razorpay_event(event)
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 5000)
+
     @override_settings(STRIPE_SECRET_KEY="sk_test_x")
     def test_stripe_checkout_marks_pending(self):
         _, ws, _, _ = make_workspace(paid=False)
@@ -72,6 +128,148 @@ class StripeBillingTests(BaseCase):
         self.assertEqual(m.call_args.kwargs["line_items"], [{"price": "price_123", "quantity": 1}])
         sub = Subscription.objects.get(workspace=ws)
         self.assertEqual((sub.status, sub.provider), ("pending", "stripe"))
+
+    @override_settings(STRIPE_SECRET_KEY="sk_test_x")
+    def test_stripe_wallet_credit_is_reserved_and_posted_after_paid_checkout(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        Plan.objects.filter(code="pro").update(stripe_price_id="price_123")
+        credit = WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="USD", amount_minor=50,
+            reason="Successful referral",
+        )
+        with mock.patch("stripe.Coupon.create", return_value=SimpleNamespace(id="coupon_1")) as coupon, \
+             mock.patch("stripe.checkout.Session.create", return_value=SimpleNamespace(
+                 id="cs_123", url="https://checkout.stripe.test/s"
+             )) as session:
+            billing.create_checkout(ws, Plan.objects.get(code="pro"), "USD", apply_wallet=True)
+
+        self.assertEqual(coupon.call_args.kwargs["amount_off"], 50)
+        self.assertEqual(coupon.call_args.kwargs["currency"], "usd")
+        self.assertEqual(session.call_args.kwargs["discounts"], [{"coupon": "coupon_1"}])
+        redemption = WalletEntry.objects.get(kind="redemption", workspace=ws)
+        self.assertEqual((redemption.status, redemption.amount_minor), ("pending", 50))
+        self.assertEqual(billing.wallet_balance(ws, "USD"), 0)
+
+        self.assertTrue(billing.handle_stripe_event({
+            "type": "checkout.session.completed",
+            "data": {"object": {
+                "id": "cs_123",
+                "subscription": "sub_wallet",
+                "customer": "cus_wallet",
+                "metadata": {
+                    "workspace_id": str(ws.pk),
+                    "plan_code": "pro",
+                    "wallet_entry_id": str(redemption.pk),
+                },
+            }},
+        }))
+        self.assertTrue(billing.handle_stripe_event({
+            "type": "invoice.paid",
+            "data": {"object": {
+                "subscription": "sub_wallet",
+                "lines": {"data": []},
+            }},
+        }))
+        redemption.refresh_from_db()
+        self.assertEqual(redemption.status, "posted")
+        self.assertEqual(billing.wallet_balance(ws, "USD"), 0)
+        self.assertEqual(credit.amount_minor, 50)
+
+    @override_settings(RAZORPAY_KEY_ID="rzp_test", RAZORPAY_KEY_SECRET="secret",
+                       RAZORPAY_REFERRAL_OFFER_ID="offer_wallet")
+    def test_razorpay_wallet_credit_uses_offer_once(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        Plan.objects.filter(code="pro").update(razorpay_plan_id="plan_123")
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="INR", amount_minor=10000,
+            reason="Successful referral",
+        )
+        client = mock.Mock()
+        client.subscription.create.return_value = {
+            "id": "sub_wallet_inr", "short_url": "https://checkout.razorpay.test/s",
+        }
+        with mock.patch("apps.billing.services._razorpay_client", return_value=client):
+            billing.create_checkout(ws, Plan.objects.get(code="pro"), "INR", apply_wallet=True)
+
+        request = client.subscription.create.call_args.args[0]
+        self.assertEqual(request["offer_id"], "offer_wallet")
+        redemption = WalletEntry.objects.get(kind="redemption", workspace=ws)
+        self.assertEqual(request["notes"]["wallet_entry_id"], str(redemption.pk))
+        self.assertEqual(redemption.amount_minor, 5000)
+        self.assertEqual(billing.wallet_balance(ws, "INR"), 5000)
+        self.assertTrue(billing.handle_razorpay_event({
+            "event": "subscription.charged",
+            "payload": {"subscription": {"entity": {
+                "id": "sub_wallet_inr", "current_end": 1893456000,
+            }}},
+        }))
+        redemption.refresh_from_db()
+        self.assertEqual(redemption.status, "posted")
+        self.assertEqual(billing.wallet_balance(ws, "INR"), 5000)
+
+    def test_wallet_cannot_be_redeemed_on_an_active_subscription(self):
+        _, ws, _, _ = make_workspace()
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="USD", amount_minor=50,
+            reason="Successful referral",
+        )
+        with self.assertRaisesMessage(ValueError, "new or cancelled"):
+            billing.create_checkout(ws, ws.subscription.plan, "USD", apply_wallet=True)
+
+    def test_wallet_credit_cannot_be_reserved_for_two_checkouts(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="USD", amount_minor=100,
+            reason="Successful referral",
+        )
+        first = billing._reserve_wallet_redemption(ws, ws.subscription.plan, "USD")
+        with self.assertRaisesMessage(ValueError, "already in progress"):
+            billing._reserve_wallet_redemption(ws, ws.subscription.plan, "USD")
+        billing._release_wallet_redemption(first)
+        self.assertEqual(billing.wallet_balance(ws, "USD"), 100)
+
+    @override_settings(STRIPE_SECRET_KEY="sk_test_x", RAZORPAY_KEY_ID="", RAZORPAY_KEY_SECRET="")
+    def test_billing_page_shows_wallet_use_only_when_subscription_is_inactive(self):
+        user, ws, _, _ = make_workspace(paid=False)
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="USD", amount_minor=50,
+            reason="Successful referral",
+        )
+        client = Client()
+        client.force_login(user)
+        self.assertContains(client.get("/billing/"), 'name="use_wallet"')
+
+        ws.subscription.status = "active"
+        ws.subscription.save()
+        response = client.get("/billing/")
+        self.assertNotContains(response, 'name="use_wallet"')
+        self.assertContains(response, "cancel it with your payment provider")
+
+    @override_settings(RAZORPAY_KEY_ID="rzp_test", RAZORPAY_KEY_SECRET="secret",
+                       RAZORPAY_REFERRAL_OFFER_ID="")
+    def test_inr_wallet_checkout_requires_a_configured_razorpay_offer(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="INR", amount_minor=5000,
+            reason="Successful referral",
+        )
+        with self.assertRaisesMessage(ValueError, "RAZORPAY_REFERRAL_OFFER_ID"):
+            billing.create_checkout(ws, ws.subscription.plan, "INR", apply_wallet=True)
+        self.assertFalse(WalletEntry.objects.filter(workspace=ws, kind="redemption").exists())
+
+    @override_settings(STRIPE_SECRET_KEY="sk_test_x")
+    def test_failed_wallet_checkout_releases_the_reservation(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        Plan.objects.filter(code="pro").update(stripe_price_id="price_123")
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="USD", amount_minor=50,
+            reason="Successful referral",
+        )
+        with mock.patch("stripe.Coupon.create", side_effect=RuntimeError("provider unavailable")):
+            with self.assertRaisesMessage(RuntimeError, "provider unavailable"):
+                billing.create_checkout(ws, Plan.objects.get(code="pro"), "USD", apply_wallet=True)
+        self.assertEqual(billing.wallet_balance(ws, "USD"), 50)
+        self.assertEqual(WalletEntry.objects.get(kind="redemption", workspace=ws).status, "released")
 
     @override_settings(STRIPE_SECRET_KEY="sk_test_x", RAZORPAY_KEY_ID="", RAZORPAY_KEY_SECRET="")
     def test_billing_page_shows_usd_only_when_only_stripe_is_configured(self):
@@ -87,6 +285,190 @@ class StripeBillingTests(BaseCase):
             self.assertGreater(plan.price_usd, 0)
             self.assertGreater(plan.price_inr, 0)
         self.assertFalse(Plan.objects.filter(code__contains="free").exists())
+
+
+class CashfreeBillingTests(BaseCase):
+    @override_settings(
+        CASHFREE_CLIENT_ID="cf_test_id",
+        CASHFREE_CLIENT_SECRET="cf_test_secret",
+        CASHFREE_ENVIRONMENT="sandbox",
+        CASHFREE_API_VERSION="2026-01-01",
+        PUBLIC_BASE_URL="https://postpilot.example",
+    )
+    def test_cashfree_checkout_creates_monthly_recurring_subscription(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        plan = Plan.objects.get(code="pro")
+        api_response = resp(payload={
+            "subscription_id": "pp-a1b2",
+            "cf_subscription_id": "cf_123",
+            "subscription_session_id": "subs_token_123",
+        })
+        with mock.patch("apps.billing.services.uuid.uuid4", side_effect=[
+            mock.Mock(hex="a1b2"), "00000000-0000-0000-0000-000000000001",
+        ]), mock.patch("apps.billing.services.requests.post", return_value=api_response) as post:
+            checkout = billing.create_checkout(ws, plan, "INR", customer_phone="9876543210")
+
+        self.assertEqual(checkout, {
+            "provider": "cashfree", "session_id": "subs_token_123", "environment": "sandbox",
+        })
+        self.assertEqual(post.call_args.args[0], "https://sandbox.cashfree.com/pg/subscriptions")
+        request = post.call_args.kwargs["json"]
+        self.assertEqual(request["customer_details"]["customer_phone"], "9876543210")
+        self.assertEqual(request["plan_details"], {
+            "plan_name": "PostPilot Pro",
+            "plan_type": "PERIODIC",
+            "plan_amount": plan.price_inr,
+            "plan_max_amount": plan.price_inr,
+            "plan_max_cycles": 120,
+            "plan_intervals": 1,
+            "plan_interval_type": "MONTH",
+            "plan_currency": "INR",
+        })
+        self.assertEqual(
+            request["subscription_meta"]["return_url"],
+            "https://postpilot.example/billing/?currency=INR",
+        )
+        sub = Subscription.objects.get(workspace=ws)
+        self.assertEqual((sub.status, sub.provider, sub.external_id), ("pending", "cashfree", "pp-a1b2"))
+
+    @override_settings(CASHFREE_CLIENT_ID="cf_test_id", CASHFREE_CLIENT_SECRET="cf_test_secret")
+    def test_cashfree_checkout_requires_a_valid_indian_mobile_number(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        with self.assertRaisesMessage(ValueError, "10-digit Indian mobile"):
+            billing.create_checkout(ws, ws.subscription.plan, "INR")
+        self.assertEqual(ws.subscription.status, "unpaid")
+
+    @override_settings(
+        RAZORPAY_KEY_ID="",
+        RAZORPAY_KEY_SECRET="",
+        CASHFREE_CLIENT_ID="cf_test_id",
+        CASHFREE_CLIENT_SECRET="cf_test_secret",
+    )
+    def test_cashfree_is_the_inr_fallback_and_does_not_redeem_wallet_credit(self):
+        _, ws, _, _ = make_workspace(paid=False)
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="INR", amount_minor=5000,
+            reason="Successful referral",
+        )
+        self.assertEqual(billing.inr_provider(), "cashfree")
+        self.assertIn("INR", billing.available_currencies())
+        with self.assertRaisesMessage(ValueError, "not supported through Cashfree"):
+            billing.create_checkout(ws, ws.subscription.plan, "INR", apply_wallet=True)
+        self.assertFalse(WalletEntry.objects.filter(workspace=ws, kind="redemption").exists())
+
+    @override_settings(CASHFREE_CLIENT_SECRET="cf_test_secret")
+    def test_cashfree_signature_and_recurring_webhook_lifecycle(self):
+        _, owner, _, _ = make_workspace(email="cashfree-owner@example.com")
+        _, friend, _, _ = make_workspace(email="cashfree-friend@example.com", paid=False)
+        from apps.billing import referrals
+
+        referrals.attach(friend, owner.referral_code)
+        sub = friend.subscription
+        sub.provider = "cashfree"
+        sub.external_id = "pp-sub-123"
+        sub.save()
+
+        client = Client()
+        event = {
+            "type": "SUBSCRIPTION_STATUS_CHANGED",
+            "data": {"subscription_details": {
+                "subscription_id": "pp-sub-123",
+                "subscription_status": "ACTIVE",
+            }},
+        }
+        body = json.dumps(event).encode()
+        timestamp = str(int(time.time()))
+        signature = base64.b64encode(
+            hmac.new(b"cf_test_secret", timestamp.encode() + b"." + body, hashlib.sha256).digest()
+        ).decode()
+        self.assertFalse(billing.verify_cashfree_signature(body, timestamp, "invalid"))
+        self.assertEqual(
+            client.post(
+                "/billing/webhook/cashfree/",
+                body,
+                content_type="application/json",
+                HTTP_X_WEBHOOK_TIMESTAMP=timestamp,
+                HTTP_X_WEBHOOK_SIGNATURE="invalid",
+            ).status_code,
+            400,
+        )
+        self.assertEqual(
+            client.post(
+                "/billing/webhook/cashfree/",
+                body,
+                content_type="application/json",
+                HTTP_X_WEBHOOK_TIMESTAMP=timestamp,
+                HTTP_X_WEBHOOK_SIGNATURE=signature,
+            ).status_code,
+            200,
+        )
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, "active")
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 0)
+
+        payment_event = {
+            "type": "SUBSCRIPTION_PAYMENT_SUCCESS",
+            "data": {"subscription_id": "pp-sub-123"},
+        }
+        self.assertTrue(billing.handle_cashfree_event(payment_event))
+        self.assertTrue(billing.handle_cashfree_event(payment_event))
+        self.assertEqual(billing.wallet_balance(owner, "INR"), 5000)
+
+        self.assertTrue(billing.handle_cashfree_event({
+            "type": "SUBSCRIPTION_PAYMENT_FAILED",
+            "data": {"subscription_id": "pp-sub-123"},
+        }))
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, "past_due")
+
+    @override_settings(
+        RAZORPAY_KEY_ID="",
+        RAZORPAY_KEY_SECRET="",
+        CASHFREE_CLIENT_ID="cf_test_id",
+        CASHFREE_CLIENT_SECRET="cf_test_secret",
+    )
+    def test_cashfree_billing_page_requests_phone_and_hides_wallet_redemption(self):
+        user, ws, _, _ = make_workspace(paid=False)
+        WalletEntry.objects.create(
+            workspace=ws, kind="referral", currency="INR", amount_minor=5000,
+            reason="Successful referral",
+        )
+        client = Client()
+        client.force_login(user)
+        response = client.get("/billing/?currency=INR")
+        self.assertContains(response, 'name="customer_phone"')
+        self.assertNotContains(response, 'name="use_wallet"')
+        self.assertContains(response, "not supported through Cashfree")
+
+    @override_settings(
+        RAZORPAY_KEY_ID="",
+        RAZORPAY_KEY_SECRET="",
+        CASHFREE_CLIENT_ID="cf_test_id",
+        CASHFREE_CLIENT_SECRET="cf_test_secret",
+    )
+    def test_cashfree_checkout_view_launches_hosted_subscription_authorization(self):
+        user, ws, _, _ = make_workspace(paid=False)
+        client = Client()
+        client.force_login(user)
+
+        def create_subscription(_url, json, **_kwargs):
+            return resp(payload={
+                "subscription_id": json["subscription_id"],
+                "cf_subscription_id": "cf_123",
+                "subscription_session_id": "session_123",
+            })
+
+        with mock.patch("apps.billing.services.requests.post", side_effect=create_subscription):
+            response = client.post(
+                "/billing/subscribe/pro/",
+                {"currency": "INR", "customer_phone": "9876543210"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "web/cashfree_checkout.html")
+        self.assertContains(response, "subscriptionsCheckout")
+        self.assertContains(response, "session_123")
+        ws.subscription.refresh_from_db()
+        self.assertEqual((ws.subscription.status, ws.subscription.provider), ("pending", "cashfree"))
 
 
 class RegionTests(BaseCase):

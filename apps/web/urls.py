@@ -35,5 +35,6 @@ urlpatterns = [
     path("billing/subscribe/<slug:code>/", views.billing_subscribe, name="billing_subscribe"),
     path("billing/dev-activate/<slug:code>/", views.billing_dev_activate, name="billing_dev_activate"),
     path("billing/webhook/razorpay/", views.razorpay_webhook, name="razorpay_webhook"),
+    path("billing/webhook/cashfree/", views.cashfree_webhook, name="cashfree_webhook"),
     path("billing/webhook/stripe/", views.stripe_webhook, name="stripe_webhook"),
 ]

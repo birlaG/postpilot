@@ -176,14 +176,19 @@ NEWSDATA_API_KEY = env("NEWSDATA_API_KEY", "")
 HTTP_TIMEOUT = int(env("HTTP_TIMEOUT", "20"))
 GRAPH_API_VERSION = env("GRAPH_API_VERSION", "v21.0")  # check Meta docs for the current version
 
-# ---------------------------------------------------------------- billing (Razorpay)
+# ---------------------------------------------------------------- billing providers
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", "")
 BILLING_GRACE_DAYS = int(env("BILLING_GRACE_DAYS", "3"))
-# Stripe is used for USD (worldwide). Razorpay is used for INR (India). Set one or both.
+# Stripe handles USD. Razorpay is primary for INR; Cashfree is its recurring-autopay fallback.
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", "")
+RAZORPAY_REFERRAL_OFFER_ID = env("RAZORPAY_REFERRAL_OFFER_ID", "")
+CASHFREE_CLIENT_ID = env("CASHFREE_CLIENT_ID", "")
+CASHFREE_CLIENT_SECRET = env("CASHFREE_CLIENT_SECRET", "")
+CASHFREE_ENVIRONMENT = env("CASHFREE_ENVIRONMENT", "sandbox")
+CASHFREE_API_VERSION = env("CASHFREE_API_VERSION", "2026-01-01")
 
 # ---------------------------------------------------------------- platform OAuth apps
 # Create one developer app per platform and set the redirect URI to
@@ -228,9 +233,11 @@ CELERY_BEAT_SCHEDULE = {
 GENERATE_LEAD_MINUTES = int(env("GENERATE_LEAD_MINUTES", "30"))   # generate this long before the slot
 SLOT_CATCHUP_MINUTES = int(env("SLOT_CATCHUP_MINUTES", "180"))    # still generate if the worker was down
 PUBLISH_MAX_ATTEMPTS = int(env("PUBLISH_MAX_ATTEMPTS", "3"))
-REFERRAL_BONUS_POSTS = int(env("REFERRAL_BONUS_POSTS", "50"))    # extra posts per month, for both sides
-REFERRAL_BONUS_DAYS = int(env("REFERRAL_BONUS_DAYS", "90"))
 REFERRAL_MAX_REWARDS = int(env("REFERRAL_MAX_REWARDS", "10"))    # rewarded invites per workspace
+REFERRAL_REWARD_USD_CENTS = int(env("REFERRAL_REWARD_USD_CENTS", "50"))
+REFERRAL_REWARD_INR_PAISE = int(env("REFERRAL_REWARD_INR_PAISE", "5000"))
+if REFERRAL_MAX_REWARDS < 1 or REFERRAL_REWARD_USD_CENTS < 1 or REFERRAL_REWARD_INR_PAISE < 1:
+    raise ImproperlyConfigured("Referral reward limits and amounts must be positive.")
 MAX_FOLLOWED_SOURCES = int(env("MAX_FOLLOWED_SOURCES", "10"))
 TREND_RETENTION_DAYS = int(env("TREND_RETENTION_DAYS", "7"))
 

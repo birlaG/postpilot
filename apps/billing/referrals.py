@@ -1,14 +1,10 @@
-"""Invite and earn: both sides get extra monthly posts after the invited workspace's first payment."""
-import logging
-from datetime import timedelta
+"""Referral attribution and one-time wallet rewards."""
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from .models import BonusCredit, Referral
-
-log = logging.getLogger(__name__)
+from .models import BonusCredit, Referral, WalletEntry
 
 
 def attach(new_workspace, code):
@@ -30,19 +26,45 @@ def attach(new_workspace, code):
         return None
 
 
-def reward_if_first_payment(workspace):
-    """Called when a subscription becomes active. Pays out at most once per referred workspace."""
-    ref = Referral.objects.filter(referred=workspace, rewarded_at__isnull=True).select_related('referrer').first()
-    if ref is None:
-        return False
-    claimed = Referral.objects.filter(pk=ref.pk, rewarded_at__isnull=True).update(rewarded_at=timezone.now())
-    if not claimed:
-        return False
-    expires = timezone.now() + timedelta(days=settings.REFERRAL_BONUS_DAYS)
-    BonusCredit.objects.create(workspace=workspace, reason="Joined with an invite", extra_posts_per_month=settings.REFERRAL_BONUS_POSTS, expires_at=expires)
-    rewarded = Referral.objects.filter(referrer=ref.referrer, rewarded_at__isnull=False).count()
-    if rewarded <= settings.REFERRAL_MAX_REWARDS:
-        BonusCredit.objects.create(workspace=ref.referrer, reason="Friend subscribed", extra_posts_per_month=settings.REFERRAL_BONUS_POSTS, expires_at=expires)
+def reward_if_first_payment(workspace, currency):
+    """Credit the referrer once, only after the referred workspace has paid."""
+    if currency not in ("USD", "INR"):
+        raise ValueError(f"Unsupported referral reward currency: {currency}")
+    amount = (
+        settings.REFERRAL_REWARD_USD_CENTS if currency == "USD"
+        else settings.REFERRAL_REWARD_INR_PAISE
+    )
+    if amount <= 0:
+        raise ValueError("Referral reward amounts must be positive.")
+
+    with transaction.atomic():
+        ref = (
+            Referral.objects.select_for_update()
+            .filter(referred=workspace, rewarded_at__isnull=True)
+            .select_related("referrer")
+            .first()
+        )
+        if ref is None:
+            return False
+
+        rewarded_count = Referral.objects.filter(
+            referrer=ref.referrer, rewarded_at__isnull=False
+        ).count()
+        ref.rewarded_at = timezone.now()
+        ref.save(update_fields=["rewarded_at"])
+
+        if rewarded_count >= settings.REFERRAL_MAX_REWARDS:
+            return True
+
+        WalletEntry.objects.create(
+            workspace=ref.referrer,
+            kind="referral",
+            status="posted",
+            currency=currency,
+            amount_minor=amount,
+            reason="Successful referral",
+            referral=ref,
+        )
     return True
 
 

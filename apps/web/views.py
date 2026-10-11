@@ -234,7 +234,12 @@ def invite(request):
     return render(request, "web/invite.html", {
         "link": link, "signed_up": made.count(), "paid": made.filter(rewarded_at__isnull=False).count(),
         "bonuses": BonusCredit.objects.filter(workspace=ws, expires_at__gt=timezone.now()),
-        "bonus_posts": settings.REFERRAL_BONUS_POSTS, "bonus_days": settings.REFERRAL_BONUS_DAYS, "max_rewards": settings.REFERRAL_MAX_REWARDS,
+        "wallet_usd": billing.formatted_wallet_amount(billing.wallet_balance(ws, "USD"), "USD"),
+        "wallet_inr": billing.formatted_wallet_amount(billing.wallet_balance(ws, "INR"), "INR"),
+        "wallet_entries": ws.wallet_entries.all()[:50],
+        "reward_usd": billing.formatted_wallet_amount(settings.REFERRAL_REWARD_USD_CENTS, "USD"),
+        "reward_inr": billing.formatted_wallet_amount(settings.REFERRAL_REWARD_INR_PAISE, "INR"),
+        "max_rewards": settings.REFERRAL_MAX_REWARDS,
         "referred": ws.referred_by_id is not None,
     })
 
@@ -657,7 +662,13 @@ def billing_page(request):
     ws = request.workspace
     sub = ws.subscription
     currencies = billing.available_currencies()
-    currency = request.GET.get("currency") if request.GET.get("currency") in ("USD", "INR") else (currencies[0] if currencies else "USD")
+    currency = request.GET.get("currency") if request.GET.get("currency") in currencies else (currencies[0] if currencies else "USD")
+    wallet_credit = billing.wallet_balance(ws, currency)
+    wallet_can_be_used = sub.status in ("unpaid", "cancelled") and wallet_credit > 0
+    if currency == "INR" and (
+        billing.inr_provider() != "razorpay" or not settings.RAZORPAY_REFERRAL_OFFER_ID
+    ):
+        wallet_can_be_used = False
     return render(request, "web/billing.html", {
         "sub": sub,
         "plans": Plan.objects.filter(is_public=True),
@@ -666,6 +677,13 @@ def billing_page(request):
         "currencies": currencies,
         "currency": currency,
         "can_pay": bool(currencies),
+        "wallet_credit": billing.formatted_wallet_amount(wallet_credit, currency),
+        "wallet_credit_available": wallet_credit > 0,
+        "wallet_can_be_used": wallet_can_be_used,
+        "wallet_currency": currency,
+        "razorpay_wallet_offer_configured": bool(settings.RAZORPAY_REFERRAL_OFFER_ID),
+        "cashfree_checkout": currency == "INR" and billing.inr_provider() == "cashfree",
+        "inr_provider": billing.inr_provider(),
         "debug": settings.DEBUG,
         "paid_now": request.GET.get("paid") == "1",
     })
@@ -680,11 +698,22 @@ def billing_subscribe(request, code):
         messages.error(request, "That payment currency is not available yet.")
         return redirect("billing")
     try:
-        url = billing.create_checkout(request.workspace, plan, currency)
+        url = billing.create_checkout(
+            request.workspace,
+            plan,
+            currency,
+            apply_wallet=request.POST.get("use_wallet") == "1",
+            customer_phone=request.POST.get("customer_phone", ""),
+        )
     except Exception as exc:
         log.warning("Checkout failed: %s", exc)
         messages.error(request, f"Could not start checkout: {exc}")
-        return redirect("billing")
+        return redirect(f"/billing/?currency={currency}")
+    if isinstance(url, dict) and url.get("provider") == "cashfree":
+        return render(request, "web/cashfree_checkout.html", {
+            "session_id": url["session_id"],
+            "environment": url["environment"],
+        })
     return redirect(url)
 
 
@@ -712,6 +741,25 @@ def razorpay_webhook(request):
     except ValueError:
         return HttpResponse(status=400)
     billing.handle_razorpay_event(event)
+    return HttpResponse("ok")
+
+
+@csrf_exempt
+@require_POST
+def cashfree_webhook(request):
+    if not billing.verify_cashfree_signature(
+        request.body,
+        request.headers.get("x-webhook-timestamp", ""),
+        request.headers.get("x-webhook-signature", ""),
+    ):
+        return HttpResponse(status=400)
+    try:
+        event = json.loads(request.body)
+    except ValueError:
+        return HttpResponse(status=400)
+    if not isinstance(event, dict):
+        return HttpResponse(status=400)
+    billing.handle_cashfree_event(event)
     return HttpResponse("ok")
 
 

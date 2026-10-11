@@ -13,7 +13,10 @@
 {% endif %}
 {% if paid_now and sub.status != 'active' %}<div class="notice">Payment received. Your plan activates as soon as the payment provider confirms it, usually within a minute. Refresh this page.</div>{% endif %}
 {% if sub.status == 'past_due' %}<div class="notice" style="background:var(--bad-soft);color:var(--bad)">Your last payment failed. Posting continues until {{ sub.grace_until|date:"j M" }}. Update your payment method to avoid a pause.</div>{% endif %}
-{% if not can_pay %}<div class="notice">No payment provider is configured on this server (set STRIPE_SECRET_KEY and/or RAZORPAY keys).{% if debug %} Development buttons below activate a plan without payment.{% endif %}</div>{% endif %}
+{% if not can_pay %}<div class="notice">No payment provider is configured on this server (set Stripe, Razorpay, and/or Cashfree credentials).{% if debug %} Development buttons below activate a plan without payment.{% endif %}</div>{% endif %}
+{% if wallet_credit_available %}
+<div class="notice">Referral wallet: <b>{{ wallet_credit }}</b> available in {{ wallet_currency }}. Promotional credit cannot be withdrawn; it can be used once at a new subscription checkout, not on automatic renewals.{% if sub.status == 'active' or sub.status == 'past_due' %} Your current subscription is active; cancel it with your payment provider before starting a new subscription checkout with wallet credit.{% elif wallet_currency == 'INR' and inr_provider == 'cashfree' %} INR wallet redemption is not supported through Cashfree checkout yet.{% elif wallet_currency == 'INR' and not razorpay_wallet_offer_configured %} INR wallet redemption is not configured on this server yet.{% endif %}</div>
+{% endif %}
 
 {% if currencies|length > 1 %}
 <p class="row">Pay in:
@@ -29,7 +32,7 @@
     <div class="price">{% if currency == 'INR' %}&#8377;{{ p.price_inr }}{% else %}${{ p.price_usd }}{% endif %}<small> / month</small></div>
     <p class="help">{{ p.max_accounts }} connected accounts &middot; {{ p.posts_per_month }} posts / month<br>{% if p.allow_video %}Includes YouTube Shorts{% else %}No YouTube Shorts{% endif %}</p>
     {% if p.pk != sub.plan_id or sub.status != 'active' %}
-      {% if can_pay %}<form method="post" action="{% url 'billing_subscribe' p.code %}">{% csrf_token %}<input type="hidden" name="currency" value="{{ currency }}"><button class="btn primary" type="submit">Choose {{ p.name }}</button></form>{% endif %}
+      {% if can_pay %}<form method="post" action="{% url 'billing_subscribe' p.code %}">{% csrf_token %}<input type="hidden" name="currency" value="{{ currency }}">{% if cashfree_checkout %}<label class="help" style="display:block;margin:8px 0">Indian mobile number for recurring autopay<input type="tel" name="customer_phone" inputmode="numeric" autocomplete="tel-national" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="9876543210" required></label>{% endif %}{% if wallet_can_be_used %}<label class="help" style="display:block;margin:8px 0"><input type="checkbox" name="use_wallet" value="1" checked> Apply {{ wallet_credit }} once to this checkout</label>{% endif %}<button class="btn primary" type="submit">Choose {{ p.name }}</button></form>{% endif %}
       {% if debug %}<form method="post" action="{% url 'billing_dev_activate' p.code %}" style="margin-top:6px">{% csrf_token %}<button class="btn small" type="submit">[dev] activate without payment</button></form>{% endif %}
     {% endif %}
   </div>

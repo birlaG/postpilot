@@ -10,7 +10,7 @@ class Plan(models.Model):
     code = models.SlugField(unique=True)
     name = models.CharField(max_length=60)
     price_usd = models.PositiveIntegerField(help_text="Per month in US dollars (Stripe)")
-    price_inr = models.PositiveIntegerField(help_text="Per month in rupees (Razorpay)")
+    price_inr = models.PositiveIntegerField(help_text="Per month in rupees (INR payment gateways)")
     max_accounts = models.PositiveIntegerField()
     posts_per_month = models.PositiveIntegerField()
     allow_video = models.BooleanField(default=True)
@@ -37,13 +37,13 @@ class Subscription(models.Model):
         ("past_due", "Payment failed"),
         ("cancelled", "Cancelled"),
     ]
-    PROVIDERS = [("", "None"), ("stripe", "Stripe"), ("razorpay", "Razorpay")]
+    PROVIDERS = [("", "None"), ("stripe", "Stripe"), ("razorpay", "Razorpay"), ("cashfree", "Cashfree")]
 
     workspace = models.OneToOneField(Workspace, on_delete=models.CASCADE, related_name="subscription")
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
     status = models.CharField(max_length=12, choices=STATUSES, default="unpaid")
     provider = models.CharField(max_length=10, choices=PROVIDERS, blank=True)
-    external_id = models.CharField(max_length=80, blank=True, db_index=True, help_text="Stripe or Razorpay subscription id")
+    external_id = models.CharField(max_length=80, blank=True, db_index=True, help_text="Payment provider subscription reference")
     customer_id = models.CharField(max_length=80, blank=True, help_text="Stripe customer id")
     renews_at = models.DateTimeField(null=True, blank=True)
     grace_until = models.DateTimeField(null=True, blank=True)
@@ -91,3 +91,40 @@ class BonusCredit(models.Model):
 
     def __str__(self):
         return f"+{self.extra_posts_per_month}/month for {self.workspace} ({self.reason})"
+
+
+class WalletEntry(models.Model):
+    """Immutable-value wallet ledger entry; pending debits reserve credit for checkout."""
+
+    KINDS = [("referral", "Referral reward"), ("redemption", "Subscription checkout")]
+    STATUSES = [("pending", "Pending"), ("posted", "Posted"), ("released", "Released")]
+    CURRENCIES = [("USD", "USD"), ("INR", "INR")]
+
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="wallet_entries")
+    kind = models.CharField(max_length=12, choices=KINDS)
+    status = models.CharField(max_length=10, choices=STATUSES, default="posted")
+    currency = models.CharField(max_length=3, choices=CURRENCIES)
+    amount_minor = models.PositiveIntegerField(help_text="Amount in cents or paise")
+    reason = models.CharField(max_length=100)
+    referral = models.OneToOneField(
+        Referral, null=True, blank=True, on_delete=models.PROTECT, related_name="wallet_reward"
+    )
+    provider_checkout_id = models.CharField(max_length=100, blank=True, db_index=True)
+    provider_subscription_id = models.CharField(max_length=100, blank=True, db_index=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        return f"{self.kind} {self.currency} {self.amount_minor} for {self.workspace}"
+
+    @property
+    def formatted_amount(self):
+        from decimal import Decimal
+
+        symbol = "$" if self.currency == "USD" else "₹"
+        prefix = "-" if self.kind == "redemption" else ""
+        return f"{prefix}{symbol}{Decimal(self.amount_minor) / 100:,.2f}"
