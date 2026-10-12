@@ -1,0 +1,19 @@
+{% extends "web/legal_base.html" %}
+{% block title %}Refund and Cancellation Policy · PostPilot{% endblock %}
+{% block description %}How PostPilot monthly subscriptions, cancellations and refund requests are handled.{% endblock %}
+{% block heading %}Refund and Cancellation Policy{% endblock %}
+{% block content %}
+<p>PostPilot is a digital subscription service operated by {{ business_name }}. Plans are billed monthly. The plan, amount, currency and payment provider are shown before you confirm payment.</p>
+
+<h2>Cancellation</h2>
+<p>You may cancel a subscription at any time using the payment provider through which you subscribed. Cancellation prevents future renewals once processed by that provider. If you cannot find the cancellation controls, contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a> and include the email address on your PostPilot account and the payment provider used. Do not send full card or bank details.</p>
+
+<h2>Refunds</h2>
+<p>We do not provide refunds for a billing period that has started, including unused time after cancellation. We will review requests involving duplicate charges, a payment taken without the corresponding service being activated, or a refund required by applicable law. Approved refunds are returned through the original payment method where possible; processing time depends on the payment provider.</p>
+
+<h2>How to request a review</h2>
+<p>Email <a href="mailto:{{ support_email }}">{{ support_email }}</a> with your account email, charge date, amount and currency, and a short description of the issue. For your safety, never include a full payment-card number, security code, password or one-time passcode.</p>
+
+<h2>Digital service delivery</h2>
+<p>PostPilot provides online software access; no physical product is shipped. See our <a href="{% url 'service_delivery' %}">Service Delivery Policy</a> for activation and access details.</p>
+{% endblock %}

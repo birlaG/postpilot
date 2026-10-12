@@ -78,6 +78,7 @@
   <main class="formside"><div class="formbox">
     {% if messages %}<ul class="msgs">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
     {% block auth %}{% endblock %}
+    <p class="help">Policies: <a href="{% url 'privacy' %}">Privacy</a> · <a href="{% url 'terms' %}">Terms</a> · <a href="{% url 'refund_policy' %}">Refunds</a></p>
   </div></main>
 </div>
 {% endif %}

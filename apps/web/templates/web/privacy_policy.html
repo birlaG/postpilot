@@ -1,0 +1,34 @@
+{% extends "web/legal_base.html" %}
+{% block title %}Privacy Policy · PostPilot{% endblock %}
+{% block description %}Learn what information PostPilot uses, why it is used, and how to request its deletion.{% endblock %}
+{% block heading %}Privacy Policy{% endblock %}
+{% block content %}
+<p>This policy explains how {{ business_name }} ("PostPilot", "we", "us") handles information when you use the PostPilot website and social publishing service.</p>
+
+<h2>Information we use</h2>
+<ul>
+  <li><strong>Account and workspace information:</strong> your email address, workspace name, country, time zone, team membership and account preferences.</li>
+  <li><strong>Connected social accounts:</strong> account identifiers, channel or page details and authorization tokens needed to connect and use the platforms you select. Social authorization tokens are encrypted before storage.</li>
+  <li><strong>Your content and settings:</strong> topics, brand preferences, drafts, captions, media, schedules, publishing history and engagement information requested from connected platforms.</li>
+  <li><strong>Subscription information:</strong> selected plan, currency, payment status, payment-provider identifiers and related billing events. Payment card or bank details are handled by the payment provider and are not stored by PostPilot.</li>
+  <li><strong>Technical information:</strong> essential session and security data needed to sign in, protect the service and diagnose errors.</li>
+</ul>
+
+<h2>How we use information</h2>
+<p>We use this information to provide and secure the service, create content you request, connect and publish to the social accounts you select, administer subscriptions, provide support, and meet legal obligations. Content you submit may be sent to AI and other service providers to generate, review or deliver the features you use.</p>
+
+<h2>When information is shared</h2>
+<p>We share only what is needed with providers that help operate requested features, including social networks you connect, payment processors, AI services and infrastructure providers. Those providers process information under their own terms and privacy policies. We do not sell your personal information.</p>
+
+<h2>Storage and retention</h2>
+<p>We retain account and workspace information while needed to provide the service. You can disconnect a social account from your workspace; this removes its stored authorization token from PostPilot. To request deletion of your PostPilot account information, see our <a href="{% url 'data_deletion' %}">Data Deletion page</a>. Some records may need to be retained to meet legal, security, accounting or dispute-resolution obligations.</p>
+
+<h2>Security and your choices</h2>
+<p>We use access controls and encrypt stored social authorization tokens. No internet service can guarantee absolute security. You can review or change workspace content and connected accounts in your account, revoke access from the social platform itself, and contact us with privacy requests.</p>
+
+<h2>Cookies and third-party services</h2>
+<p>PostPilot uses essential session cookies for sign-in and security. Social networks, payment providers and other services you choose to use may collect information under their own policies. Use their account settings to manage those services.</p>
+
+<h2>Contact</h2>
+<p>For privacy questions or requests, email <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+{% endblock %}

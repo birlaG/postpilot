@@ -293,6 +293,26 @@ class WebTests(BaseCase):
         c.force_login(user)
         return c
 
+    def test_public_verification_and_policy_pages_render(self):
+        pages = {
+            "/privacy/": ("Privacy Policy", "dineshbirla4235@gmail.com"),
+            "/terms/": ("Terms of Service", "Indiansofttech"),
+            "/refund-policy/": ("Refund and Cancellation Policy", "started"),
+            "/contact/": ("Contact PostPilot", "dineshbirla4235@gmail.com"),
+            "/data-deletion/": ("Data Deletion Instructions", "delete"),
+            "/service-delivery/": ("Service Delivery Policy", "No physical goods"),
+        }
+        client = Client()
+        for path, expected in pages.items():
+            with self.subTest(path=path):
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, expected[0])
+                self.assertContains(response, expected[1])
+        self.assertContains(client.get("/"), 'href="/privacy/"')
+        self.assertContains(client.get("/"), 'href="/data-deletion/"')
+        self.assertContains(client.get("/signup/"), 'href="/terms/"')
+
     def test_signup_creates_unpaid_workspace_with_region_and_timezone(self):
         c = Client()
         resp = c.post("/signup/", {"name": "My Page", "email": "new@example.com", "password": "a-long-password-1",

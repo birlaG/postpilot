@@ -1,120 +1,168 @@
 {% load static %}<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PostPilot · Fresh posts on every channel, every day</title>
-  <meta name="description" content="Pick your topics, connect YouTube, Instagram, Facebook, X and LinkedIn, and PostPilot writes, designs and publishes fresh posts every day.">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f6f5">
+  <meta name="description" content="See how PostPilot turns daily news, fresh ideas and the shows you follow into on-brand social posts, ready for your review or scheduled to publish.">
+  <title>PostPilot · Your daily content, on autopilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96;700&display=swap">
   <link rel="stylesheet" href="{% static 'web/app.css' %}">
-  <style>
-    .lp { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
-    .lp-top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--line); }
-    .lp-top .brand-mark { padding: 0; }
-    .lp-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; align-items: center; padding: 72px 0 76px; }
-    .lp-eyebrow { display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel); color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .045em; margin-bottom: 20px; box-shadow: var(--shadow-card); }
-    .lp-eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px var(--good-soft); }
-    .lp-hero h1 { font-size: clamp(36px, 5.4vw, 60px); line-height: 1.04; letter-spacing: -2px; margin: 0 0 18px; }
-    .lp-hero p { font-size: 18px; color: var(--muted); max-width: 46ch; margin: 0 0 28px; }
-    .lp-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .lp-cta .btn { padding: 13px 24px; font-size: 16px; }
-    .lp-plat { margin-top: 26px; color: var(--muted); font-size: 14px; }
-    .lp-plat b { color: var(--ink); font-weight: 600; }
-    .lp-sample { padding: 24px 26px 12px; box-shadow: var(--shadow-float); transform: rotate(1deg); }
-    .lp-sample h2 { margin: 0 0 4px; font-size: 17px; }
-    .lp-sec { padding: 64px 0; border-top: 1px solid var(--line); }
-    .lp-sec h2 { font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -1.1px; margin: 0 0 10px; line-height: 1.1; }
-    .lp-lead { color: var(--muted); max-width: 58ch; margin: 0 0 28px; font-size: 17px; }
-    .lp-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; list-style: none; margin: 0; padding: 0; counter-reset: s; }
-    .lp-steps li { counter-increment: s; border-top: 3px solid var(--sun); padding-top: 14px; }
-    .lp-steps li::before { content: counter(s); font: 700 15px var(--font-head); color: var(--muted); display: block; margin-bottom: 4px; }
-    .lp-steps b { display: block; font: 650 18px var(--font-head); margin-bottom: 4px; } .lp-steps span { color: var(--muted); }
-    .lp-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 28px; list-style: none; margin: 0; padding: 0; }
-    .lp-topics li { padding: 9px 0; border-bottom: 1px solid var(--line); font-weight: 500; }
-    .lp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-    .lp-themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
-    .lp-themes img { width: 100%; border-radius: var(--r-md); border: 1px solid var(--line); display: block; }
-    .lp-themes span { display: block; color: var(--muted); font-size: 13px; margin-top: 5px; }
-    .lp-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .lp-plans ul { padding-left: 18px; margin: 12px 0 18px; color: var(--muted); }
-    .lp-foot { padding: 32px 0 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
-    @media (max-width: 860px) { .lp-hero, .lp-two { grid-template-columns: 1fr; gap: 32px; } .lp-steps { grid-template-columns: 1fr 1fr; } .lp-hero { padding: 48px 0 56px; } .lp-sample { transform: none; } }
-    @media (max-width: 520px) { .lp { padding: 0 18px; } .lp-steps { grid-template-columns: 1fr; } .lp-top .row .btn:first-child { display: none; } .lp-hero { padding: 38px 0 44px; } }
-  </style>
+  <link rel="stylesheet" href="{% static 'web/landing.css' %}">
 </head>
-<body>
+<body class="landing">
 <div class="lp">
-  <div class="lp-top"><div class="brand-mark">Post<span>Pilot</span></div>
-    <div class="row"><a class="btn" href="{% url 'login' %}">Log in</a><a class="btn primary" href="{% url 'signup' %}">Get started</a></div></div>
-
-  <header class="lp-hero">
-    <div>
-      <div class="lp-eyebrow">AI-powered social publishing</div>
-      <h1>Your posts get written and sent while you work.</h1>
-      <p>Pick your topics and connect your accounts. Claude writes each post, designs the card or Short, and publishes on schedule, or waits for your approval.</p>
-      <div class="lp-cta"><a class="btn primary" href="{% url 'signup' %}">Create your account</a><span class="help">Plans from ${{ plans.0.price_usd }} a month. No free tier.</span></div>
-      <div class="lp-plat"><b>Publishes to</b> {{ platforms|join:", " }}</div>
+  <nav class="lp-nav" aria-label="Main navigation">
+    <a class="brand-mark" href="#top" aria-label="PostPilot home">Post<span>Pilot</span></a>
+    <div class="lp-nav-links">
+      <a href="#topics">What you can post</a>
+      <a href="#workflow">How it works</a>
+      <a href="#pricing">Pricing</a>
     </div>
-    <div class="card lp-sample" aria-label="Example of a day's schedule">
-      <h2>Today</h2><div class="help">An example day for one creator</div>
-      <ul class="tl" style="margin-top:6px">
-        <li><span class="time">07:30</span><span class="dot published"></span><div><div class="what">Tech explained</div><div class="where">YouTube Short</div></div><span class="badge published">Published</span></li>
-        <li><span class="time">09:00</span><span class="dot published"></span><div><div class="what">Daily motivation</div><div class="where">Instagram</div></div><span class="badge published">Published</span></li>
-        <li><span class="time">12:30</span><span class="dot pending_approval"></span><div><div class="what">Trending news</div><div class="where">LinkedIn</div></div><span class="badge pending_approval">Needs approval</span></li>
-        <li><span class="time">18:00</span><span class="dot queued"></span><div><div class="what">Podcast highlights</div><div class="where">X</div></div><span class="badge queued">Queued</span></li>
-      </ul>
+    <div class="lp-nav-actions">
+      <a class="lp-login" href="{% url 'login' %}">Log in</a>
+      <a class="btn primary" href="{% url 'signup' %}">Get started <span aria-hidden="true">↗</span></a>
     </div>
-  </header>
+  </nav>
 
-  <section class="lp-sec">
-    <h2>Set up once, in about five minutes</h2>
-    <p class="lp-lead">After that, the daily work is a tap to approve, or nothing at all.</p>
-    <ol class="lp-steps">
-      <li><b>Connect</b><span>Sign in to your YouTube, Instagram, Facebook, X, LinkedIn or Telegram account.</span></li>
-      <li><b>Choose topics</b><span>Trending news, podcasts, jokes, tech, spiritual and more, or a show you follow.</span></li>
-      <li><b>Claude creates</b><span>Original posts, image cards and Shorts, in your colours, voice and language.</span></li>
-      <li><b>You decide</b><span>Publish automatically, or review each post first.</span></li>
-    </ol>
-  </section>
+  <main id="top">
+    <header class="lp-hero">
+      <div class="lp-hero-copy lp-enter">
+        <div class="lp-eyebrow"><span></span> YOUR SOCIAL MEDIA, IN MOTION</div>
+        <h1>Good content.<br><em>Every single day.</em></h1>
+        <p class="lp-hero-lead">PostPilot finds the stories, writes the posts and gets them ready for every channel. You set the direction. We take care of the daily grind.</p>
+        <div class="lp-hero-actions">
+          <a class="btn primary lp-main-cta" href="{% url 'signup' %}">See what your brand can do <span aria-hidden="true">↗</span></a>
+          <a class="lp-text-link" href="#workflow">Take the 60-second tour <span aria-hidden="true">↓</span></a>
+        </div>
+        <p class="lp-no-surprises">Explore everything here first. No account or connected socials needed.</p>
+        <div class="lp-social-proof">
+          <div class="lp-avatar-stack" aria-hidden="true"><span>✳</span><span>✦</span><span>◉</span><span>↗</span></div>
+          <div><b>One idea, ready for every channel</b><span>Made for creators, teams and growing brands</span></div>
+        </div>
+      </div>
 
-  <section class="lp-sec">
-    <h2>{{ categories|length }} topics, each with its own rules</h2>
-    <p class="lp-lead">Every topic has writing guidelines and safety checks built in.</p>
-    <ul class="lp-topics">{% for c in categories %}<li>{{ c.icon }}&nbsp; {{ c.name }}</li>{% endfor %}</ul>
-  </section>
+      <div class="lp-hero-art lp-enter lp-enter-later" aria-label="Preview of a PostPilot content calendar">
+        <div class="lp-orbit lp-orbit-one"></div><div class="lp-orbit lp-orbit-two"></div>
+        <div class="lp-art-note lp-art-note-top"><span class="lp-live-dot"></span> YOUR CONTENT, ON THE MOVE</div>
+        <div class="lp-calendar">
+          <div class="lp-calendar-head"><div><span class="lp-mini-label">MONDAY, OCTOBER 12</span><b>A little more room to create.</b></div><span class="lp-calendar-menu">···</span></div>
+          <div class="lp-calendar-tabs"><span class="selected">Today <i>4</i></span><span>Needs your review <i>1</i></span></div>
+          <div class="lp-post lp-post-news">
+            <div class="lp-post-time">08:30 <span></span></div><div class="lp-post-icon">📰</div>
+            <div class="lp-post-info"><b>Today's big story, simply told</b><span>Trending news · Instagram</span></div><span class="lp-post-status ready">Ready</span>
+          </div>
+          <div class="lp-post lp-post-motivation">
+            <div class="lp-post-time">11:00 <span></span></div><div class="lp-post-icon">🔥</div>
+            <div class="lp-post-info"><b>A small win worth celebrating</b><span>Motivation · LinkedIn</span></div><span class="lp-post-status queued">Queued</span>
+          </div>
+          <div class="lp-post lp-post-tech">
+            <div class="lp-post-time">14:15 <span></span></div><div class="lp-post-icon">💡</div>
+            <div class="lp-post-info"><b>Tech, without the jargon</b><span>New technology · YouTube</span></div><span class="lp-post-status queued">Queued</span>
+          </div>
+          <div class="lp-post lp-post-podcast">
+            <div class="lp-post-time">17:00 <span></span></div><div class="lp-post-icon">🎙️</div>
+            <div class="lp-post-info"><b>One idea from your latest listen</b><span>Podcast pick · X</span></div><span class="lp-post-status review">Review</span>
+          </div>
+          <div class="lp-calendar-foot"><span>✦</span> Your voice. Your schedule. Your call.</div>
+        </div>
+        <div class="lp-float-card lp-float-left"><span class="lp-float-spark">✳</span><span><b>On-brand by default</b><small>Your colors + your voice</small></span></div>
+        <div class="lp-float-card lp-float-right"><span class="lp-approval-check">✓</span><span><b>You’re in control</b><small>Review before it goes live</small></span></div>
+        <div class="lp-art-caption">A preview of your future content calendar</div>
+      </div>
+      <div class="lp-hero-stamp" aria-hidden="true">IDEAS IN.<br>GOOD POSTS OUT. <span>✳</span></div>
+    </header>
 
-  <section class="lp-sec lp-two">
-    <div>
-      <h2>Turn the shows you follow into posts</h2>
-      <p class="lp-lead" style="margin:0">Add a podcast, interview show, YouTube channel or blog. Each new episode can become a post that credits the creator and links to the original.</p>
-    </div>
-    <div class="card"><div class="cat" style="padding-top:0"><div><div class="t">Founders Talk, new episode</div><div class="help">How she built a bakery without a loan</div></div><span class="badge pending_approval">Draft ready</span></div>
-      <div class="post-text" style="margin-top:12px">New on Founders Talk: a baker explains why she hired slowly and stayed small for two years. Worth a listen if you are starting out.</div></div>
-  </section>
+    <section class="lp-platforms" aria-label="Supported social platforms">
+      <p>ONE WORKSPACE. THE CHANNELS YOU ALREADY USE.</p>
+      <div class="lp-platform-list">{% for platform in platforms %}<span><i aria-hidden="true">{% if 'YouTube' in platform %}▶{% elif 'Instagram' in platform %}◎{% elif 'Facebook' in platform %}f{% elif 'LinkedIn' in platform %}in{% elif 'Telegram' in platform %}➤{% else %}𝕏{% endif %}</i>{{ platform }}</span>{% endfor %}</div>
+    </section>
 
-  <section class="lp-sec">
-    <h2>Cards that look like your brand</h2>
-    <p class="lp-lead">Choose a style, your colours and your watermark. The same look carries into your Shorts.</p>
-    <div class="lp-themes">{% for code, label in themes %}<div><img loading="lazy" width="270" height="270" alt="{{ label }} card" src="{% url 'card_preview' %}?theme={{ code }}"><span>{{ label }}</span></div>{% endfor %}</div>
-  </section>
+    <section class="lp-section lp-topics-section" id="topics">
+      <div class="lp-section-intro">
+        <div><span class="lp-kicker">A FEED THAT FEELS LIKE YOU</span><h2>Never wonder<br>“what should I post?”</h2></div>
+        <p>Pick the ideas your audience cares about. PostPilot turns each one into a steady stream of fresh, useful content—not just another generic AI caption.</p>
+      </div>
+      <div class="lp-topic-grid">
+        {% for c in categories %}
+        <article class="lp-topic-card">
+          <div class="lp-topic-top"><span class="lp-topic-icon">{{ c.icon }}</span><span class="lp-topic-arrow" aria-hidden="true">↗</span></div>
+          <h3>{{ c.name }}</h3><p>{{ c.description }}</p>
+        </article>
+        {% empty %}
+        <article class="lp-topic-card"><div class="lp-topic-top"><span class="lp-topic-icon">📰</span></div><h3>Daily news</h3><p>Fresh headlines, summarized clearly and linked to their source.</p></article>
+        <article class="lp-topic-card"><div class="lp-topic-top"><span class="lp-topic-icon">🔥</span></div><h3>Motivation</h3><p>Original encouragement and practical ideas for every day.</p></article>
+        {% endfor %}
+        <article class="lp-topic-card lp-topic-custom"><div class="lp-topic-top"><span class="lp-topic-icon">✎</span><span class="lp-topic-arrow" aria-hidden="true">↗</span></div><h3>Your own ideas</h3><p>Bring a topic, campaign or announcement. Tell PostPilot what you want to say.</p></article>
+      </div>
+      <div class="lp-topic-note"><span>✳</span> From daily news and motivation to tech, wellness, food and more—choose only the topics that fit your brand.</div>
+    </section>
 
-  <section class="lp-sec">
-    <h2>Safe by default</h2>
-    <p class="lp-lead" style="margin:0">An independent AI review checks every post. Sensitive topics like news, finance and health wait for your approval unless you choose otherwise, and any post that fails a check is never published.</p>
-  </section>
+    <section class="lp-section lp-workflow-section" id="workflow">
+      <div class="lp-workflow-heading"><span class="lp-kicker">FROM FIRST CLICK TO FIRST POST</span><h2>Simple to set up.<br><em>Easy to stay in control.</em></h2><p>Here’s what happens after you decide to get started.</p></div>
+      <div class="lp-steps">
+        <article class="lp-step"><span class="lp-step-number">01</span><div class="lp-step-icon">⌘</div><h3>Choose your channels</h3><p>Connect YouTube, Instagram, Facebook, X, LinkedIn or Telegram. Pick where each topic belongs.</p><span class="lp-step-tail">Your channels, your call <b>→</b></span></article>
+        <article class="lp-step"><span class="lp-step-number">02</span><div class="lp-step-icon">✳</div><h3>Set your content mix</h3><p>Choose categories, a posting rhythm and your language. Follow a podcast, YouTube channel or site for new ideas.</p><span class="lp-step-tail">Built around your interests <b>→</b></span></article>
+        <article class="lp-step"><span class="lp-step-number">03</span><div class="lp-step-icon">✎</div><h3>Make it sound like you</h3><p>Give posts your tone, colors and writing samples. Get platform-ready text, branded image cards or Shorts.</p><span class="lp-step-tail">Your voice, not a template <b>→</b></span></article>
+        <article class="lp-step"><span class="lp-step-number">04</span><div class="lp-step-icon">↗</div><h3>Review or let it roll</h3><p>Approve posts yourself or schedule automatic publishing. Sensitive topics wait for your review by default.</p><span class="lp-step-tail">You always stay in charge <b>✓</b></span></article>
+      </div>
+    </section>
 
-  <section class="lp-sec">
-    <h2>Pricing</h2>
-    <p class="lp-lead">Every plan is paid, and you can cancel any time. Prices in US dollars, or rupees in India.</p>
-    <div class="lp-plans">
-      {% for p in plans %}<div class="card plan"><b style="font:650 18px var(--font-head)">{{ p.name }}</b>
-        <div class="price" style="margin-top:6px">${{ p.price_usd }}<small> a month</small></div><div class="help">or &#8377;{{ p.price_inr }} a month</div>
-        <ul><li>{{ p.max_accounts }} connected accounts</li><li>{{ p.posts_per_month }} posts a month</li><li>{% if p.allow_video %}Shorts videos included{% else %}Text and image posts{% endif %}</li></ul>
-        <a class="btn primary" href="{% url 'signup' %}">Choose {{ p.name }}</a></div>{% endfor %}
-    </div>
-  </section>
+    <section class="lp-section lp-showcase">
+      <div class="lp-showcase-copy"><span class="lp-kicker">A LITTLE MORE THAN CAPTIONS</span><h2>Turn the shows you follow into posts.</h2><p>One content workflow gives you the right format for the right place—while keeping your brand recognizable everywhere.</p>
+        <ul class="lp-check-list">
+          <li><span>✓</span><div><b>Text that fits the platform</b><small>Purpose-written captions and copy for every channel.</small></div></li>
+          <li><span>✓</span><div><b>Image cards in your style</b><small>Five visual themes, your colors and an optional watermark.</small></div></li>
+          <li><span>✓</span><div><b>Vertical YouTube Shorts</b><small>Turn an idea into a short video on plans that include video.</small></div></li>
+          <li><span>✓</span><div><b>15 languages and your brand voice</b><small>Set the language, tone and writing examples that make it yours.</small></div></li>
+        </ul>
+      </div>
+      <div class="lp-showcase-art">
+        <div class="lp-brand-card"><span class="lp-brand-overline">A DAILY REMINDER</span><span class="lp-brand-quote">Small steps.<br><em>Real momentum.</em></span><span class="lp-brand-bottom"><span>✳ YOUR BRAND</span><span>POSTPILOT DAILY</span></span></div>
+        <div class="lp-format-note"><span class="lp-format-bars"><i></i><i></i><i></i></span><span><b>One idea, ready to travel</b><small>Caption · Image card · Short</small></span></div>
+        <span class="lp-showcase-spark" aria-hidden="true">✳</span>
+      </div>
+    </section>
 
-  <footer class="lp-foot">&copy; PostPilot. AI-written content can contain mistakes, so review sensitive posts before they go out.</footer>
+    <section class="lp-source-banner">
+      <div class="lp-source-icon">🎧</div><div><span class="lp-kicker">YOUR FAVORITE SOURCES, IN THE MIX</span><h2>Follow the shows. Catch the ideas.</h2><p>Follow a podcast, interview show, YouTube channel or website. When something new comes out, PostPilot can shape it into a credited post that links back to the original.</p></div><span class="lp-source-arrow" aria-hidden="true">↗</span>
+    </section>
+
+    <section class="lp-section lp-control-section">
+      <div class="lp-control-intro"><span class="lp-kicker">SMART AUTOMATION, HUMAN JUDGMENT</span><h2>Helpful automation.<br><em>No surprises.</em></h2><p>PostPilot handles the repetitive parts, but the final say stays with you—from the first draft to the moment a post goes live.</p></div>
+      <div class="lp-control-grid">
+        <article class="lp-control-card"><span class="lp-control-icon">◷</span><h3>Plan ahead</h3><p>See what’s coming in your content calendar. Keep posts organized in your publishing queue.</p></article>
+        <article class="lp-control-card"><span class="lp-control-icon">✓</span><h3>Review every detail</h3><p>Choose approval-first, automatic publishing or draft-only. News, finance and health default to review.</p></article>
+        <article class="lp-control-card"><span class="lp-control-icon">⌁</span><h3>Learn what works</h3><p>Track post engagement by platform and topic. Opt in to scheduling around your best-performing hours.</p></article>
+        <article class="lp-control-card"><span class="lp-control-icon">◎</span><h3>See the source</h3><p>Current stories are grounded in fetched sources. Followed shows are credited and linked in the post.</p></article>
+      </div>
+      <p class="lp-safety-note"><span>✳</span> Every post goes through safety checks and an independent AI review. Posts that fail a check are not auto-published.</p>
+    </section>
+
+    <section class="lp-pricing-section" id="pricing">
+      <div class="lp-pricing-heading"><div><span class="lp-kicker">STRAIGHTFORWARD MONTHLY PLANS</span><h2>Pick your pace.<br><em>Grow from there.</em></h2></div><p>See exactly what’s included before you create an account or connect a channel.</p></div>
+      <div class="lp-plan-grid">
+        {% for p in plans %}
+        <article class="lp-plan-card {% if forloop.counter == 2 %}lp-plan-featured{% endif %}">
+          {% if forloop.counter == 2 %}<span class="lp-plan-popular">FOR THE GROWING BRAND ✳</span>{% endif %}
+          <span class="lp-plan-name">{{ p.name }}</span><div class="lp-plan-price">${{ p.price_usd }}<small>/ month</small></div><p class="lp-plan-local">or &#8377;{{ p.price_inr }} / month</p>
+          <div class="lp-plan-divider"></div><p class="lp-plan-fit">{% if forloop.counter == 1 %}A focused start{% elif forloop.counter == 2 %}Room to grow{% else %}Built for busy teams{% endif %}</p>
+          <ul><li><b>{{ p.max_accounts }}</b> connected accounts</li><li><b>{{ p.posts_per_month }}</b> posts per month</li><li>{% if p.allow_video %}<b>YouTube Shorts</b> included{% else %}<b>Text and image</b> posts{% endif %}</li><li>Scheduling and review controls</li><li>Brand voice and content categories</li></ul>
+          <a class="btn {% if forloop.counter == 2 %}primary{% endif %} lp-plan-cta" href="{% url 'signup' %}">Get started with {{ p.name }} <span aria-hidden="true">↗</span></a>
+        </article>
+        {% empty %}
+        <article class="lp-plan-card"><span class="lp-plan-name">Plans</span><p>Monthly plans are available after signup.</p><a class="btn primary lp-plan-cta" href="{% url 'signup' %}">Get started <span aria-hidden="true">↗</span></a></article>
+        {% endfor %}
+      </div>
+      <p class="lp-paid-note"><span>ⓘ</span> PostPilot is a paid service with no free tier or trial. Create your account first, then choose a plan before connecting accounts and publishing.</p>
+    </section>
+
+    <section class="lp-last-cta"><span class="lp-kicker">MAKE ROOM FOR THE WORK ONLY YOU CAN DO</span><h2>Your next good post<br>is already taking shape.</h2><p>See your topics, channels and plan options first. Start when it feels right.</p><a class="btn primary lp-main-cta" href="{% url 'signup' %}">Explore PostPilot <span aria-hidden="true">↗</span></a><div class="lp-last-doodle" aria-hidden="true">✳</div></section>
+  </main>
+
+  <footer class="lp-footer"><a class="brand-mark" href="#top">Post<span>Pilot</span></a><p>Useful content, more consistently.</p><div><a href="#topics">Explore features</a><a href="#pricing">Pricing</a><a href="{% url 'login' %}">Log in</a></div><nav class="lp-legal-links" aria-label="Policies"><a href="{% url 'privacy' %}">Privacy</a><a href="{% url 'terms' %}">Terms</a><a href="{% url 'refund_policy' %}">Refunds</a><a href="{% url 'service_delivery' %}">Service delivery</a><a href="{% url 'data_deletion' %}">Data deletion</a><a href="{% url 'contact' %}">Contact</a></nav><small>© PostPilot · AI can make mistakes. Review sensitive content before it goes live.</small></footer>
 </div>
 </body>
 </html>

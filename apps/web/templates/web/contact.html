@@ -1,0 +1,15 @@
+{% extends "web/legal_base.html" %}
+{% block title %}Contact PostPilot · Customer Support{% endblock %}
+{% block description %}Contact Indiansofttech, the operator of PostPilot, for customer, billing, privacy or platform support.{% endblock %}
+{% block heading %}Contact PostPilot{% endblock %}
+{% block content %}
+<p>PostPilot is operated by {{ business_name }}. For customer support, billing questions, privacy requests, data deletion requests or questions about a connected social account, email us:</p>
+<p class="legal-contact"><a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+<p>Please include the email address associated with your PostPilot account and enough detail for us to understand your request. Do not email passwords, one-time passcodes or full payment-card details.</p>
+<h2>Policies and account requests</h2>
+<ul>
+  <li><a href="{% url 'privacy' %}">Privacy Policy</a></li>
+  <li><a href="{% url 'refund_policy' %}">Refund and Cancellation Policy</a></li>
+  <li><a href="{% url 'data_deletion' %}">Data Deletion Instructions</a></li>
+</ul>
+{% endblock %}

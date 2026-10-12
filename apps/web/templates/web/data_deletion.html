@@ -1,0 +1,19 @@
+{% extends "web/legal_base.html" %}
+{% block title %}Data Deletion Instructions · PostPilot{% endblock %}
+{% block description %}Instructions for requesting deletion of PostPilot account and connected social-platform data.{% endblock %}
+{% block heading %}Data Deletion Instructions{% endblock %}
+{% block content %}
+<p>You can request deletion of your PostPilot account and associated personal information by emailing <a href="mailto:{{ support_email }}">{{ support_email }}</a> from the email address associated with the account.</p>
+
+<h2>Include in your request</h2>
+<ul>
+  <li>The email address used to sign in to PostPilot.</li>
+  <li>Your workspace name, if you know it.</li>
+  <li>The social platform account(s) you want disconnected, if you are requesting deletion of a specific connection only.</li>
+</ul>
+<p>We may ask for reasonable information to verify that you control the account before acting on a deletion request. Do not send your password, one-time passcode or full payment-card details.</p>
+
+<h2>What happens next</h2>
+<p>We will review your request and delete or de-identify information that we are not required to retain, subject to applicable legal, accounting, security and dispute-resolution obligations. Deleting a connection from PostPilot removes its stored authorization token; you can also revoke the app's access from the social platform's own settings. Deletion from PostPilot does not delete content already published to a third-party platform; remove that content directly on the platform.</p>
+<p>For information about data use and retention, see our <a href="{% url 'privacy' %}">Privacy Policy</a>.</p>
+{% endblock %}

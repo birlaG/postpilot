@@ -97,6 +97,21 @@ def health(request):
 
 
 # ------------------------------------------------------------------ public pages
+def legal_page(request, page):
+    templates = {
+        "privacy": "web/privacy_policy.html",
+        "terms": "web/terms.html",
+        "refunds": "web/refund_policy.html",
+        "contact": "web/contact.html",
+        "data_deletion": "web/data_deletion.html",
+        "service_delivery": "web/service_delivery.html",
+    }
+    return render(request, templates[page], {
+        "business_name": "Indiansofttech",
+        "support_email": "dineshbirla4235@gmail.com",
+    })
+
+
 def home(request):
     """Marketing page for visitors, dashboard for signed-in users."""
     if request.user.is_authenticated:

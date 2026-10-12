@@ -1,0 +1,28 @@
+{% extends "web/legal_base.html" %}
+{% block title %}Terms of Service · PostPilot{% endblock %}
+{% block description %}Terms for using the PostPilot social content planning and publishing service.{% endblock %}
+{% block heading %}Terms of Service{% endblock %}
+{% block content %}
+<p>These terms apply when you access PostPilot, a social content planning and publishing service operated by {{ business_name }}. By creating an account or using the service, you agree to these terms.</p>
+
+<h2>The service</h2>
+<p>PostPilot helps you prepare, review, schedule and publish content to social accounts you connect. Features and supported platforms may change. Access requires an account and a paid monthly plan; plan features and prices are shown before checkout.</p>
+
+<h2>Your account and connected platforms</h2>
+<p>You are responsible for keeping your sign-in details secure, ensuring you are authorized to connect each social account, and complying with the terms and policies of each platform. You authorize PostPilot to use the permissions you grant to provide the features you select. You can disconnect an account from your workspace or revoke access through the platform.</p>
+
+<h2>Your content and publishing choices</h2>
+<p>You retain responsibility for content you submit, edit or publish, including its accuracy, rights, disclosures and compliance with applicable rules. AI-generated content may be inaccurate, incomplete or unsuitable. Review content before it is published. If you enable automatic publishing, you authorize PostPilot to publish eligible content according to your settings and schedule.</p>
+
+<h2>Subscriptions, renewals and cancellation</h2>
+<p>Plans are billed monthly through the payment provider shown at checkout and renew until cancelled. You can cancel through the payment provider used for your subscription; cancellation stops future renewals according to that provider's process. Access may remain available through the paid period, subject to the provider's confirmation and your account status. See the <a href="{% url 'refund_policy' %}">Refund and Cancellation Policy</a>.</p>
+
+<h2>Acceptable use</h2>
+<p>You must not use PostPilot to break the law, infringe another person's rights, publish abusive or deceptive material, bypass platform limits, interfere with the service, or attempt unauthorized access. We may suspend access when reasonably necessary to protect users, the service or connected platforms.</p>
+
+<h2>Availability and liability</h2>
+<p>We work to keep PostPilot available, but do not promise uninterrupted or error-free service. Publishing depends on third-party platforms and their APIs, which may change or be unavailable. To the extent permitted by applicable law, PostPilot is provided without warranties beyond those that cannot legally be excluded. Nothing in these terms limits rights that cannot be limited by law.</p>
+
+<h2>Changes and contact</h2>
+<p>We may update these terms when the service or legal requirements change. The effective date above identifies the current version. Continued use after a change means the revised terms apply. Questions can be sent to <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+{% endblock %}

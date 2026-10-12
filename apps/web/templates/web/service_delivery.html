@@ -1,0 +1,13 @@
+{% extends "web/legal_base.html" %}
+{% block title %}Service Delivery Policy · PostPilot{% endblock %}
+{% block description %}How PostPilot subscription access is activated and delivered as an online service.{% endblock %}
+{% block heading %}Service Delivery Policy{% endblock %}
+{% block content %}
+<p>PostPilot is an online software service operated by {{ business_name }}. All plans are digital subscriptions. No physical goods are sold or shipped, so shipping charges and physical delivery do not apply.</p>
+
+<h2>Subscription activation</h2>
+<p>After checkout, the payment provider sends PostPilot confirmation of the subscription. Once that confirmation is received and processed, the selected plan is applied to the workspace associated with the account used at checkout. If access does not appear after a successful payment, contact <a href="mailto:{{ support_email }}">{{ support_email }}</a> with your account email, payment date, amount and currency. Do not send full card or bank details.</p>
+
+<h2>Using the service</h2>
+<p>Access is provided online through your PostPilot account while the subscription is active and the service is available. Social publishing also depends on the connected platform and the permissions it grants. See the <a href="{% url 'terms' %}">Terms of Service</a> and <a href="{% url 'refund_policy' %}">Refund and Cancellation Policy</a>.</p>
+{% endblock %}

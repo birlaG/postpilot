@@ -6,6 +6,12 @@ from . import views
 urlpatterns = [
     path("manifest.webmanifest", views.manifest, name="manifest"),
     path("health/", views.health, name="health"),
+    path("privacy/", views.legal_page, {"page": "privacy"}, name="privacy"),
+    path("terms/", views.legal_page, {"page": "terms"}, name="terms"),
+    path("refund-policy/", views.legal_page, {"page": "refunds"}, name="refund_policy"),
+    path("contact/", views.legal_page, {"page": "contact"}, name="contact"),
+    path("data-deletion/", views.legal_page, {"page": "data_deletion"}, name="data_deletion"),
+    path("service-delivery/", views.legal_page, {"page": "service_delivery"}, name="service_delivery"),
     path("signup/", views.signup, name="signup"),
     path("login/", auth_views.LoginView.as_view(template_name="web/login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),

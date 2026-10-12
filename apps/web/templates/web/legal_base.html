@@ -1,0 +1,35 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{% block description %}PostPilot policies and customer information.{% endblock %}">
+  <title>{% block title %}PostPilot policies{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'web/app.css' %}">
+  <link rel="stylesheet" href="{% static 'web/legal.css' %}">
+</head>
+<body class="legal-page">
+  <header class="legal-header">
+    <a class="legal-brand" href="{% url 'dashboard' %}">Post<span>Pilot</span></a>
+    <nav aria-label="Policy navigation">
+      <a href="{% url 'privacy' %}">Privacy</a>
+      <a href="{% url 'terms' %}">Terms</a>
+      <a href="{% url 'refund_policy' %}">Refunds</a>
+      <a href="{% url 'service_delivery' %}">Service delivery</a>
+      <a href="{% url 'data_deletion' %}">Data deletion</a>
+      <a href="{% url 'contact' %}">Contact</a>
+    </nav>
+  </header>
+  <main class="legal-content">
+    <a class="legal-back" href="{% url 'dashboard' %}">← PostPilot home</a>
+    <h1>{% block heading %}{% endblock %}</h1>
+    <p class="legal-updated">Effective date: October 12, 2026</p>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="legal-footer">
+    <span>PostPilot is operated by {{ business_name }}.</span>
+    <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+    <span>© PostPilot</span>
+  </footer>
+</body>
+</html>
